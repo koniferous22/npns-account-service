@@ -5,29 +5,27 @@ import { printSchema } from 'graphql';
 import gql from 'graphql-tag';
 import { buildSchema, createResolversMap } from 'type-graphql';
 import { createConnection } from 'typeorm';
+import { Tedis } from 'tedis';
 import { UserResolver } from './resolvers/User';
 import { AccountServiceContext } from './context';
+import { getConfig } from './config';
 
 const bootstrap = async () => {
-  // TODO unify config
-  const port = parseInt(process.env.PORT ?? '', 10);
-  if (Number.isNaN(port)) {
-    throw new Error(
-      `Invalid port from config 'ACCOUNT_SERVICE_PORT': ${process.env.ACCOUNT_SERVICE_PORT}`
-    );
-  }
+  const { port, verificationToken } = getConfig();
   const connection = await createConnection();
   const typeGraphQLSchema = await buildSchema({
     resolvers: [UserResolver]
   });
   const schema = buildFederatedSchema({
     typeDefs: gql(printSchema(typeGraphQLSchema)),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolvers: createResolversMap(typeGraphQLSchema) as any
   });
   const server = new ApolloServer({
     schema,
     context: {
-      em: connection.createEntityManager()
+      em: connection.createEntityManager(),
+      verificationTokenCache: new Tedis(verificationToken.cache)
     } as AccountServiceContext
   });
   server.listen({ port }).then(({ url }) => {
