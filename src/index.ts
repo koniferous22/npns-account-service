@@ -11,7 +11,7 @@ import { AccountServiceContext } from './context';
 import { getConfig } from './config';
 
 const bootstrap = async () => {
-  const { port, verificationToken } = getConfig();
+  const { port, graphqlPath, verificationToken } = getConfig();
   const connection = await createConnection();
   const typeGraphQLSchema = await buildSchema({
     resolvers: [UserResolver]
@@ -28,6 +28,7 @@ const bootstrap = async () => {
       verificationTokenCache: new Tedis(verificationToken.cache)
     } as AccountServiceContext
   });
+  server.setGraphQLPath(graphqlPath);
   server.listen({ port }).then(({ url }) => {
     console.log(`🚀 Account service ready at ${url}`);
   });

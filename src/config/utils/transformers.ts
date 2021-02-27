@@ -21,6 +21,16 @@ export const getNumber = (env: string, configPath: string) => {
   return number;
 };
 
+export const getEndpoint = (env: string, configPath: string) => {
+  // TODO validate allowed url characters
+  if (!env.startsWith('/')) {
+    throw new Error(
+      `Invalid config value for "${configPath}" expected endpoint, got "${env}"`
+    );
+  }
+  return env;
+};
+
 export const getEmail = (env: string, configPath: string) => {
   const res = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
   const lowerCaseEmail = env.toLowerCase();

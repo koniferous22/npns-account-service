@@ -5,13 +5,19 @@ import {
   ResolveConfigType,
   GetObjectValues
 } from './utils/generics';
-import { getEmail, getNumber, getUrl } from './utils/transformers';
+import { getEmail, getEndpoint, getNumber, getUrl } from './utils/transformers';
 
 const configWithParser = {
   port: {
     type: 'leaf' as const,
     originalValue: process.env.PORT,
     transform: getNumber,
+    overridenValue: null as null | string
+  },
+  graphqlPath: {
+    type: 'leaf' as const,
+    originalValue: process.env.GRAPHQL_PATH,
+    transform: getEndpoint,
     overridenValue: null as null | string
   },
   accountNotificationSenderEmail: {
@@ -107,6 +113,7 @@ export const getConfig = () => {
   return config;
 };
 
+// TODO promisify
 export function overrideConfig<KeyString extends string>(
   keyString: KeyString,
   newValue: GetConfigValueByKeyString<KeyString, typeof configWithParser>,

@@ -66,10 +66,10 @@ export class UserResolver {
 
     // STEP 3: send confirmation email
     try {
-      console.log('sending mail');
       await sendMail(newUser.email, 'signUpTemplate', token);
     } catch (e) {
       await userRepo.remove(newUser);
+      // TODO redis error over here during cleanup
       await ctx.verificationTokenCache.del(newUser.id);
       throw e;
     }
