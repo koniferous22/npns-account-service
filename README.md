@@ -10,3 +10,4 @@ Account service for npns
 ## TODO
 * verification token cache certificates 
 * define pwd constraints
+* proper responses for error handling cases

@@ -10,19 +10,29 @@ import {
   Mutation,
   ObjectType
 } from 'type-graphql';
-import { hashSync, genSaltSync } from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { hashSync, genSaltSync, compare } from 'bcrypt';
 import { getConfig } from '../config';
 import { AccountServiceContext } from '../context';
 import { SignUpUserContract } from '../contracts/SignUpUser';
 import { User } from '../entities/User';
 import { sendMail } from '../external/nodemailer';
+import { SignInUserContract } from '../contracts/SignInUser';
 
 @ObjectType()
-class CreateUserPayload {
+class SignUpUserPayload {
   @Field()
   message!: string;
   @Field(() => User)
   createdUser!: User;
+}
+
+@ObjectType()
+class SignInUserPayload {
+  @Field()
+  token!: string;
+  @Field(() => User)
+  user!: User;
 }
 
 @Resolver(() => User)
@@ -41,7 +51,7 @@ export class UserResolver {
     return ctx.em.getRepository(User).findOneOrFail({ id });
   }
 
-  @Mutation(() => CreateUserPayload)
+  @Mutation(() => SignUpUserPayload)
   async signUpUser(
     @Arg('input') input: SignUpUserContract,
     @Ctx() ctx: AccountServiceContext
@@ -77,9 +87,42 @@ export class UserResolver {
       await ctx.verificationTokenCache.del(newUser.id);
       throw e;
     }
-    return plainToClass(CreateUserPayload, {
+    return plainToClass(SignUpUserPayload, {
       message: `User "${newUser.username}" created`,
       createdUser: newUser
+    });
+  }
+
+  @Mutation(() => SignInUserPayload)
+  async signInUser(
+    @Arg('input') input: SignInUserContract,
+    @Ctx() ctx: AccountServiceContext
+  ) {
+    // TODO find by email as well, investigate if orm has some 'or' option
+    const user = await ctx.em.findOne(User, {
+      where: [{ username: input.identifier }, { email: input.identifier }]
+    });
+    if (!user) {
+      throw new Error(
+        `User with email/username: "${input.identifier}" not found`
+      );
+    }
+    if (!compare(user.password, input.password)) {
+      throw new Error('Attempted login with wrong password');
+    }
+    const token = jwt.sign(
+      {
+        ...user,
+        // ! removing sensitive stuff from JWT
+        password: undefined
+      },
+      // NOTE should be validated by config custom runtime validation
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      getConfig().jwtSecret!
+    );
+    return plainToClass(SignInUserPayload, {
+      user,
+      token
     });
   }
 }

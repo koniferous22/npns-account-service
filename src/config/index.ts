@@ -20,6 +20,11 @@ const configWithParser = {
     transform: getEndpoint,
     overridenValue: null as null | string
   },
+  jwtSecret: {
+    type: 'leaf' as const,
+    originalValue: process.env.JWT_SECRET,
+    overridenValue: null as null | string
+  },
   accountNotificationSenderEmail: {
     type: 'leaf' as const,
     originalValue: process.env.NOTIFICATION_SENDER_EMAIL,

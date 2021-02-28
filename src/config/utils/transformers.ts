@@ -1,3 +1,4 @@
+import { isJWT } from 'class-validator';
 import { URL } from 'url';
 
 export const getUrl = (env: string, configPath: string) => {
@@ -40,4 +41,4 @@ export const getEmail = (env: string, configPath: string) => {
     );
   }
   return lowerCaseEmail;
-}
+};
