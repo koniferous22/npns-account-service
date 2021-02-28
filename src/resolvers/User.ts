@@ -10,6 +10,7 @@ import {
   Mutation,
   ObjectType
 } from 'type-graphql';
+import { hashSync, genSaltSync } from 'bcrypt';
 import { getConfig } from '../config';
 import { AccountServiceContext } from '../context';
 import { SignUpUserContract } from '../contracts/SignUpUser';
@@ -46,7 +47,11 @@ export class UserResolver {
     @Ctx() ctx: AccountServiceContext
   ) {
     const userRepo = ctx.em.getRepository(User);
-    const newUser = userRepo.create(classToPlain(input));
+    const userPlainObj = classToPlain(input);
+    const newUser = userRepo.create({
+      ...userPlainObj,
+      password: hashSync(userPlainObj.password, genSaltSync(8))
+    });
     // STEP 1: save user
     await userRepo.save(newUser);
 

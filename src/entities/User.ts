@@ -13,4 +13,19 @@ export class User extends BaseEntity {
   @Field()
   @Column()
   email!: string;
+
+  @Column()
+  password!: string;
+
+  @Field()
+  @Column({
+    default: false
+  })
+  isVerified!: boolean;
+
+  @Field()
+  @Column({
+    default: false
+  })
+  hasNsfwAllowed!: boolean;
 }
