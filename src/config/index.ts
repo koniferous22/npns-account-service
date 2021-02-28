@@ -54,7 +54,7 @@ const configWithParser = {
             originalValue: process.env.NODEMAILER_USER,
             overridenValue: null as null | string
           },
-          password: {
+          pass: {
             type: 'leaf' as const,
             originalValue: process.env.NODEMAILER_PASSWORD,
             overridenValue: null as null | string

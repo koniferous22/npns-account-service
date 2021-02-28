@@ -62,7 +62,6 @@ export class UserResolver {
       await userRepo.remove(newUser);
       throw e;
     }
-    await ctx.verificationTokenCache.get(newUser.id);
 
     // STEP 3: send confirmation email
     try {
