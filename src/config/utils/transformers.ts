@@ -1,5 +1,5 @@
-import { isJWT } from 'class-validator';
 import { URL } from 'url';
+import { ArrayElement } from '../../utils/generics';
 
 export const getUrl = (env: string, configPath: string) => {
   try {
@@ -42,3 +42,16 @@ export const getEmail = (env: string, configPath: string) => {
   }
   return lowerCaseEmail;
 };
+
+export function getEnum<T extends string>(allowedValues: T[]) {
+  return (env: string, configPath: string) => {
+    if (!allowedValues.includes(env as T)) {
+      throw new Error(
+        `Invalid config value for "${configPath}" expected enum with allowed values [${allowedValues.join(
+          ', '
+        )}], got ${env}`
+      );
+    }
+    return env as ArrayElement<typeof allowedValues>;
+  };
+}

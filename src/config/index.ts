@@ -5,7 +5,13 @@ import {
   ResolveConfigType,
   GetObjectValues
 } from './utils/generics';
-import { getEmail, getEndpoint, getNumber, getUrl } from './utils/transformers';
+import {
+  getEmail,
+  getEndpoint,
+  getEnum,
+  getNumber,
+  getUrl
+} from './utils/transformers';
 
 const configWithParser = {
   port: {
@@ -20,10 +26,21 @@ const configWithParser = {
     transform: getEndpoint,
     overridenValue: null as null | string
   },
-  jwtSecret: {
-    type: 'leaf' as const,
-    originalValue: process.env.JWT_SECRET,
-    overridenValue: null as null | string
+  jwt: {
+    type: 'node' as const,
+    children: {
+      secret: {
+        type: 'leaf' as const,
+        originalValue: process.env.JWT_SECRET,
+        overridenValue: null as null | string
+      },
+      algorithm: {
+        type: 'leaf' as const,
+        originalValue: process.env.JWT_ALGORITHM,
+        transform: getEnum(['HS256']),
+        overridenValue: null as null | string
+      }
+    }
   },
   accountNotificationSenderEmail: {
     type: 'leaf' as const,

@@ -23,10 +23,14 @@ const bootstrap = async () => {
   });
   const server = new ApolloServer({
     schema,
-    context: {
-      em: connection.createEntityManager(),
-      verificationTokenCache: new Tedis(verificationToken.cache)
-    } as AccountServiceContext
+    context: ({ req }) => {
+      const userFromRequest = req.headers.user as string;
+      return {
+        em: connection.createEntityManager(),
+        verificationTokenCache: new Tedis(verificationToken.cache),
+        user: userFromRequest ? JSON.parse(userFromRequest) : null
+      } as AccountServiceContext;
+    }
   });
   server.setGraphQLPath(graphqlPath);
   server.listen({ port }).then(({ url }) => {

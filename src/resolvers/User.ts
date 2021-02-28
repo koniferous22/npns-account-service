@@ -110,6 +110,7 @@ export class UserResolver {
     if (!compare(user.password, input.password)) {
       throw new Error('Attempted login with wrong password');
     }
+    const jwtConfig = getConfig().jwt;
     const token = jwt.sign(
       {
         ...user,
@@ -118,7 +119,10 @@ export class UserResolver {
       },
       // NOTE should be validated by config custom runtime validation
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      getConfig().jwtSecret!
+      jwtConfig.secret!,
+      {
+        algorithm: jwtConfig.algorithm
+      }
     );
     return plainToClass(SignInUserPayload, {
       user,
