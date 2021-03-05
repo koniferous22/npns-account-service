@@ -37,11 +37,14 @@ class SignInUserPayload {
 
 @Resolver(() => User)
 export class UserResolver {
-  private async createUserToken(cache: Tedis, userId: string) {
-    const { verificationToken } = getConfig();
+  private async createUserToken(
+    cache: Tedis,
+    userId: string,
+    verificationTokenConfig: ReturnType<typeof getConfig>['verificationToken']
+  ) {
     const token = randomBytes(16).toString('hex');
     await cache.set(userId, token);
-    await cache.expire(userId, verificationToken.expirationTime);
+    await cache.expire(userId, verificationTokenConfig.expirationTime);
     return token;
   }
 
@@ -70,7 +73,8 @@ export class UserResolver {
     try {
       token = await this.createUserToken(
         ctx.verificationTokenCache,
-        newUser.id
+        newUser.id,
+        ctx.config.verificationToken
       );
     } catch (e) {
       // rollback user creation
@@ -110,7 +114,7 @@ export class UserResolver {
     if (!compare(user.password, input.password)) {
       throw new Error('Attempted login with wrong password');
     }
-    const jwtConfig = getConfig().jwt;
+    const jwtConfig = ctx.config.jwt;
     const token = jwt.sign(
       {
         ...user,

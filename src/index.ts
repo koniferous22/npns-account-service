@@ -28,7 +28,8 @@ const bootstrap = async () => {
       return {
         em: connection.createEntityManager(),
         verificationTokenCache: new Tedis(verificationToken.cache),
-        user: userFromRequest ? JSON.parse(userFromRequest) : null
+        user: userFromRequest ? JSON.parse(userFromRequest) : null,
+        config: getConfig()
       } as AccountServiceContext;
     }
   });
