@@ -27,7 +27,7 @@ export type ResolveConfigType<
             transform: (...args: any[]) => any;
           }
           ? ReturnType<ConfigT[key]['transform']>
-          : ConfigT[key]['originalValue']
+          : NonNullable<ConfigT[key]['originalValue']>
         : never;
       node: ConfigT[key] extends {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -113,7 +113,7 @@ export const resolveConfigEntry = (
             // Just fixing typescript code like this
             throw new Error("Missing key 'transform' in the config");
           }
-          if (rest.originalValue === undefined) {
+          if (rest.originalValue === undefined || rest.originalValue === '') {
             throw new Error(
               `Missing config value for key "${
                 parentKey ? `${parentKey}.${key}` : key
