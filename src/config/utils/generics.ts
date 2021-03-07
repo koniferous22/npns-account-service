@@ -95,10 +95,14 @@ export type GetConfigValueByKeyString<
 
 export const resolveConfigEntry = (
   config: ConfigEntryType,
-  parentKey: null | string = null
+  parentKeys: string[] = []
+): {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): any =>
-  Object.fromEntries(
+  config: any;
+  errors: string[];
+} => {
+  const errors: string[] = [];
+  const result = Object.fromEntries(
     Object.entries(config).map(([key, { type, ...rest }]) => {
       switch (type) {
         case 'node': {
@@ -106,28 +110,41 @@ export const resolveConfigEntry = (
             // Just fixing typescript code like this
             throw new Error("Missing key 'children' in the config");
           }
-          return [key, resolveConfigEntry(rest.children)];
+          const {
+            config: childrenConfig,
+            errors: childrenErrors
+          } = resolveConfigEntry(rest.children, parentKeys.concat(key));
+          errors.push(...childrenErrors);
+          return [key, childrenConfig];
         }
         case 'leaf': {
           if (!('overridenValue' in rest)) {
             // Just fixing typescript code like this
-            throw new Error("Missing key 'transform' in the config");
+            throw new Error("Missing key 'overridenValue' in the config");
           }
           if (rest.originalValue === undefined || rest.originalValue === '') {
-            throw new Error(
+            errors.push(
               `Missing config value for key "${
-                parentKey ? `${parentKey}.${key}` : key
+                parentKeys ? `${parentKeys.join('.')}.${key}` : key
               }"`
             );
           }
           const currentValue = rest.overridenValue ?? rest.originalValue;
-          return [
-            key,
-            rest.transform
+          let parsedValue;
+          try {
+            parsedValue = rest.transform
               ? rest.transform(currentValue.toString(), key)
-              : currentValue
-          ];
+              : currentValue;
+          } catch (e) {
+            errors.push(e.toString());
+          }
+          return [key, parsedValue];
         }
       }
     })
   );
+  return {
+    config: result,
+    errors
+  };
+};
