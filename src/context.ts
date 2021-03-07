@@ -6,6 +6,8 @@ import { User } from './entities/User';
 export type AccountServiceContext = {
   em: ReturnType<ReturnType<typeof getConnection>['createEntityManager']>;
   verificationTokenCache: Tedis;
-  user: Omit<User, 'password'>;
+  user: {
+    data: Omit<User, 'password'>;
+  } | null;
   config: ReturnType<typeof getConfig>;
 };

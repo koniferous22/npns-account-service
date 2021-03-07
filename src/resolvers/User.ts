@@ -117,9 +117,11 @@ export class UserResolver {
     const jwtConfig = ctx.config.jwt;
     const token = jwt.sign(
       {
-        ...user,
-        // ! removing sensitive stuff from JWT
-        password: undefined
+        data: {
+          ...user,
+          // ! removing sensitive stuff from JWT
+          password: undefined
+        }
       },
       // NOTE should be validated by config custom runtime validation
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

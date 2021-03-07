@@ -1,8 +1,7 @@
 import { SchemaDirectiveVisitor } from 'apollo-server';
-import jwt from 'jsonwebtoken';
 import { defaultFieldResolver, GraphQLField, GraphQLObjectType } from 'graphql';
 import { AccountServiceContext } from '../context';
-import { getConfig } from '../config';
+import { User } from '../entities/User';
 
 // NOTE inspiration behind this directive
 // * https://www.apollographql.com/docs/apollo-server/schema/creating-directives/
@@ -28,7 +27,7 @@ type DecoratedGraphQLObjectType = GraphQLObjectType<
 export class AuthDirective extends SchemaDirectiveVisitor {
   visitObject(type: DecoratedGraphQLObjectType) {
     this.ensureFieldsWrapped(type);
-    type._requiredAuthRole = this.args.requires;
+    type._requiredAuthRole = true;
   }
   // Visitor methods for nested types like fields and arguments
   // also receive a details object that provides information about
@@ -38,7 +37,7 @@ export class AuthDirective extends SchemaDirectiveVisitor {
     details: any
   ) {
     this.ensureFieldsWrapped(details.objectType);
-    field._requiredAuthRole = this.args.requires;
+    field._requiredAuthRole = true;
   }
 
   ensureFieldsWrapped(objectType: DecoratedGraphQLObjectType) {
@@ -66,9 +65,14 @@ export class AuthDirective extends SchemaDirectiveVisitor {
         }
 
         const context = args[2];
-        const user = context.user;
-        // TODO permission roles & where does it make sense to query db
-        if (!user) {
+        if (!context?.user?.data) {
+          throw new Error('not authorized');
+        }
+        const userFromDb = await context.em.findOneOrFail(
+          User,
+          context.user.data
+        );
+        if (!userFromDb) {
           throw new Error('not authorized');
         }
 

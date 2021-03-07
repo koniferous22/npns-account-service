@@ -1,10 +1,13 @@
 import { Entity, Column, Unique } from 'typeorm';
-import { Field, ObjectType } from 'type-graphql';
+import { Directive, Field, ObjectType } from 'type-graphql';
 import { BaseEntity } from './Base';
 
+@Directive(`@key(fields: "id")`)
 @ObjectType()
 @Entity()
 @Unique(['username', 'email'])
+@Unique(['username'])
+@Unique(['email'])
 export class User extends BaseEntity {
   @Field()
   @Column()
