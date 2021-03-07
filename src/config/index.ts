@@ -1,3 +1,4 @@
+import path from 'path';
 import {
   resolveConfigNode,
   GetConfigValueByKeyString,
@@ -124,10 +125,62 @@ const configWithParser = {
         {
           type: 'node' as const,
           children: {
-            hovno: {
+            type: {
               type: 'leaf' as const,
-              originalValue: process.env.KOKOT,
+              originalValue: process.env.ACCOUNT_DB_TYPE,
+              transform: getEnum(['postgres']),
               overridenValue: null as null | string
+            },
+            host: {
+              type: 'leaf' as const,
+              originalValue: process.env.ACCOUNT_DB_HOST,
+              overridenValue: null as null | string
+            },
+            port: {
+              type: 'leaf' as const,
+              originalValue: process.env.ACCOUNT_DB_PORT,
+              transform: getNumber,
+              overridenValue: null as null | string
+            },
+            username: {
+              type: 'leaf' as const,
+              originalValue: process.env.ACCOUNT_DB_USERNAME,
+              overridenValue: null as null | string
+            },
+            password: {
+              type: 'leaf' as const,
+              originalValue: process.env.ACCOUNT_DB_PASSWORD,
+              overridenValue: null as null | string
+            },
+            database: {
+              type: 'leaf' as const,
+              originalValue: process.env.ACCOUNT_DB_DATABASE,
+              overridenValue: null as null | string
+            },
+            migrations: {
+              type: 'leaf' as const,
+              originalValue: [path.join(__dirname, 'src/migrations/**/*.ts')],
+              overridenValue: null as null | string
+            },
+            entities: {
+              type: 'leaf' as const,
+              originalValue: [path.join(__dirname, 'src/migrations/**/*.ts')],
+              overridenValue: null as null | string
+            },
+            cli: {
+              type: 'node' as const,
+              children: {
+                migrationsDir: {
+                  type: 'leaf' as const,
+                  originalValue: 'src/migrations',
+                  overridenValue: null as null | string
+                },
+                entitiesDir: {
+                  type: 'leaf' as const,
+                  originalValue: 'src/entities',
+                  overridenValue: null as null | string
+                }
+              }
             }
           }
         }

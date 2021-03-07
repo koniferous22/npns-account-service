@@ -11,4 +11,4 @@ Account service for npns
 * verification token cache certificates 
 * define pwd constraints
 * proper responses for error handling cases
-* Simplify config API if possible (AST difficult to work with)
+* Simplify config API if possible to make ASTs more understanadable
