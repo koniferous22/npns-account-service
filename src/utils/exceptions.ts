@@ -1,0 +1,39 @@
+import { PendingOperation } from '../entities/User';
+import templates from '../external/nodemailer/templates';
+
+export class UserNotFoundError extends Error {
+  name = 'UserNotFoundError';
+  constructor(public identifier: string) {
+    super(`User with email/username: "${identifier}" not found`);
+  }
+}
+
+export class WrongPasswordError extends Error {
+  name = 'WrongPasswordError';
+  constructor() {
+    super('Attempted login with wrong password');
+  }
+}
+
+export class CacheCreateTokenError extends Error {
+  name = 'CacheCreateTokenError';
+  constructor(
+    public identifier: string,
+    public executedOperation: PendingOperation
+  ) {
+    super(
+      `Couldn't create verification token for "${identifier}", operation: ${executedOperation}`
+    );
+  }
+}
+
+type TemplateType = keyof typeof templates;
+
+export class NodemailerError extends Error {
+  name = 'NodemailerError';
+  constructor(public recipient: string, public template: TemplateType) {
+    super(
+      `Error while sending email to "${recipient}", with template "${template}"`
+    );
+  }
+}

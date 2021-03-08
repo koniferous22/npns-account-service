@@ -159,12 +159,12 @@ const configWithParser = {
             },
             migrations: {
               type: 'leaf' as const,
-              originalValue: [path.join(__dirname, 'src/migrations/**/*.ts')],
+              originalValue: [path.join(__dirname, '../migrations/**/*.ts')],
               overridenValue: null as null | string
             },
             entities: {
               type: 'leaf' as const,
-              originalValue: [path.join(__dirname, 'src/migrations/**/*.ts')],
+              originalValue: [path.join(__dirname, '../entities/**/*.ts')],
               overridenValue: null as null | string
             },
             cli: {

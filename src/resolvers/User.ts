@@ -8,42 +8,74 @@ import {
   Ctx,
   Field,
   Mutation,
-  ObjectType
+  ObjectType,
+  ArgsType,
+  Args
 } from 'type-graphql';
 import jwt from 'jsonwebtoken';
 import { hashSync, genSaltSync, compare } from 'bcrypt';
+import { IsString } from 'class-validator';
 import { getConfig } from '../config';
 import { AccountServiceContext } from '../context';
-import { SignUpUserContract } from '../contracts/SignUpUser';
-import { User } from '../entities/User';
+import { PendingOperation, User } from '../entities/User';
 import { sendMail } from '../external/nodemailer';
-import { SignInUserContract } from '../contracts/SignInUser';
+import { SignInUserContract, SignUpUserContract } from '../utils/contracts';
+import {
+  CacheCreateTokenError,
+  NodemailerError,
+  UserNotFoundError,
+  WrongPasswordError
+} from '../utils/exceptions';
+import { BasePayload } from './BasePayload';
 
-@ObjectType()
-class SignUpUserPayload {
-  @Field()
+@ObjectType({ implements: BasePayload })
+class SignUpUserPayload implements BasePayload {
   message!: string;
   @Field(() => User)
   createdUser!: User;
 }
 
-@ObjectType()
-class SignInUserPayload {
+@ObjectType({ implements: BasePayload })
+class SignInUserPayload implements BasePayload {
+  message!: string;
   @Field()
   token!: string;
   @Field(() => User)
   user!: User;
 }
 
+@ObjectType({ implements: BasePayload })
+class ResetPasswordPayload implements BasePayload {
+  message!: string;
+}
+
+@ArgsType()
+class FindUserByIdentifierInput {
+  @Field()
+  @IsString()
+  identifier!: string;
+}
 @Resolver(() => User)
 export class UserResolver {
   private async createUserToken(
     cache: Tedis,
     userId: string,
-    verificationTokenConfig: ReturnType<typeof getConfig>['verificationToken']
+    verificationTokenConfig: ReturnType<typeof getConfig>['verificationToken'],
+    payload?: string | undefined
   ) {
     const token = randomBytes(16).toString('hex');
-    await cache.set(userId, token);
+    await cache.hmset(
+      userId,
+      payload
+        ? {
+            token,
+            payload
+          }
+        : {
+            token
+          }
+    );
+    // await cache.set(userId, token);
     await cache.expire(userId, verificationTokenConfig.expirationTime);
     return token;
   }
@@ -79,7 +111,10 @@ export class UserResolver {
     } catch (e) {
       // rollback user creation
       await userRepo.remove(newUser);
-      throw e;
+      throw new CacheCreateTokenError(
+        newUser.username,
+        PendingOperation.SIGN_UP
+      );
     }
 
     // STEP 3: send confirmation email
@@ -89,7 +124,7 @@ export class UserResolver {
       await userRepo.remove(newUser);
       // TODO redis error over here during cleanup
       await ctx.verificationTokenCache.del(newUser.id);
-      throw e;
+      throw new NodemailerError(newUser.email, 'signUpTemplate');
     }
     return plainToClass(SignUpUserPayload, {
       message: `User "${newUser.username}" created`,
@@ -102,17 +137,14 @@ export class UserResolver {
     @Arg('input') input: SignInUserContract,
     @Ctx() ctx: AccountServiceContext
   ) {
-    // TODO find by email as well, investigate if orm has some 'or' option
     const user = await ctx.em.findOne(User, {
       where: [{ username: input.identifier }, { email: input.identifier }]
     });
     if (!user) {
-      throw new Error(
-        `User with email/username: "${input.identifier}" not found`
-      );
+      throw new UserNotFoundError(input.identifier);
     }
     if (!compare(user.password, input.password)) {
-      throw new Error('Attempted login with wrong password');
+      throw new WrongPasswordError();
     }
     const jwtConfig = ctx.config.jwt;
     const token = jwt.sign(
@@ -131,8 +163,49 @@ export class UserResolver {
       }
     );
     return plainToClass(SignInUserPayload, {
+      message: 'Logged in',
       user,
       token
+    });
+  }
+
+  @Mutation(() => ResetPasswordPayload)
+  async requestPasswordReset(
+    @Args() args: FindUserByIdentifierInput,
+    @Ctx() ctx: AccountServiceContext
+  ) {
+    const user = await ctx.em.findOne(User, {
+      where: [{ username: args.identifier }, { email: args.identifier }]
+    });
+    if (!user) {
+      throw new UserNotFoundError(args.identifier);
+    }
+
+    user.pendingOperation = PendingOperation.RESET_PASSWORD;
+    await ctx.em.getRepository(User).save(user);
+
+    let token: string;
+    try {
+      token = await this.createUserToken(
+        ctx.verificationTokenCache,
+        user.id,
+        ctx.config.verificationToken
+      );
+    } catch (e) {
+      // rollback user creation
+      throw new CacheCreateTokenError(
+        args.identifier,
+        PendingOperation.RESET_PASSWORD
+      );
+    }
+    try {
+      await sendMail(user.email, 'pwdResetTemplate', token);
+    } catch (e) {
+      await ctx.verificationTokenCache.del(user.id);
+      throw new NodemailerError(user.email, 'pwdResetTemplate');
+    }
+    return plainToClass(ResetPasswordPayload, {
+      message: 'Password request reset sent'
     });
   }
 }
