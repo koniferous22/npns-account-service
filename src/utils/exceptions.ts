@@ -37,3 +37,10 @@ export class NodemailerError extends Error {
     );
   }
 }
+
+export class UserAlreadyVerifiedError extends Error {
+  name = 'UserAlreadyVerifiedError';
+  constructor(public identifier: string) {
+    super(`User "${identifier}" is already verified after sign up`);
+  }
+}

@@ -12,3 +12,4 @@ Account service for npns
 * define pwd constraints
 * proper responses for error handling cases
 * Simplify config API if possible to make ASTs more understanadable
+* Limit on resend sign up

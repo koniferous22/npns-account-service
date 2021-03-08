@@ -23,6 +23,7 @@ import { SignInUserContract, SignUpUserContract } from '../utils/contracts';
 import {
   CacheCreateTokenError,
   NodemailerError,
+  UserAlreadyVerifiedError,
   UserNotFoundError,
   WrongPasswordError
 } from '../utils/exceptions';
@@ -75,15 +76,39 @@ export class UserResolver {
             token
           }
     );
+    try {
+      await cache.set(token, userId);
+    } catch (e) {
+      await cache.del(userId);
+      throw e;
+    }
     // await cache.set(userId, token);
     await cache.expire(userId, verificationTokenConfig.expirationTime);
     return token;
   }
 
+  private async cleanupUserToken(cache: Tedis, userId: string) {
+    const foundToken = (await cache.hmget(userId, 'token'))[0];
+    if (foundToken) {
+      console.log(`foundToken: ${foundToken}`);
+      await cache.del(foundToken);
+    }
+    await cache.del(userId);
+  }
+
   @Query(() => User)
   userById(@Arg('id') id: string, @Ctx() ctx: AccountServiceContext) {
-    // TODO validate user not found
     return ctx.em.getRepository(User).findOneOrFail({ id });
+  }
+
+  @Query(() => User)
+  userByIdentifier(
+    @Arg('identifier') identifier: string,
+    @Ctx() ctx: AccountServiceContext
+  ) {
+    return ctx.em.getRepository(User).findOneOrFail({
+      where: [{ username: identifier }, { email: identifier }]
+    });
   }
 
   @Mutation(() => SignUpUserPayload)
@@ -122,8 +147,7 @@ export class UserResolver {
       await sendMail(newUser.email, 'signUpTemplate', token);
     } catch (e) {
       await userRepo.remove(newUser);
-      // TODO redis error over here during cleanup
-      await ctx.verificationTokenCache.del(newUser.id);
+      await this.cleanupUserToken(ctx.verificationTokenCache, newUser.id);
       throw new NodemailerError(newUser.email, 'signUpTemplate');
     }
     return plainToClass(SignUpUserPayload, {
@@ -132,6 +156,42 @@ export class UserResolver {
     });
   }
 
+  @Mutation(() => SignUpUserPayload)
+  async resendUserSignUp(
+    @Arg('identifier') identifier: string,
+    @Ctx() ctx: AccountServiceContext
+  ) {
+    const userRepo = ctx.em.getRepository(User);
+    const user = await userRepo.findOneOrFail({
+      where: [{ username: identifier }, { email: identifier }]
+    });
+    if (user.pendingOperation !== PendingOperation.SIGN_UP) {
+      throw new UserAlreadyVerifiedError(identifier);
+    }
+    await this.cleanupUserToken(ctx.verificationTokenCache, user.id)
+
+    let token: string;
+    try {
+      token = await this.createUserToken(
+        ctx.verificationTokenCache,
+        user.id,
+        ctx.config.verificationToken
+      );
+    } catch (e) {
+      throw new CacheCreateTokenError(user.username, PendingOperation.SIGN_UP);
+    }
+
+    try {
+      await sendMail(user.email, 'signUpTemplate', token);
+    } catch (e) {
+      await this.cleanupUserToken(ctx.verificationTokenCache, user.id);
+      throw new NodemailerError(user.email, 'signUpTemplate');
+    }
+    return plainToClass(SignUpUserPayload, {
+      message: `Confirmation email resent to "${user.email}"`,
+      createdUser: user
+    });
+  }
   @Mutation(() => SignInUserPayload)
   async signInUser(
     @Arg('input') input: SignInUserContract,
