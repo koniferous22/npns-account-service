@@ -63,7 +63,7 @@ class RequestEmailChangePayload implements BasePayload {
 }
 
 @ObjectType({ implements: BasePayload })
-class ChangeUsernamePayload implements BasePayload {
+class ChangeAliasPayload implements BasePayload {
   message!: string;
 }
 
@@ -82,7 +82,7 @@ class RequestEmailChangeInput {
 }
 
 @ArgsType()
-class ChangeUsernameInput {
+class ChangeAliasInput {
   @Field()
   @IsIdentifierAvailable({
     message: 'New username "$value" already used'
@@ -125,7 +125,6 @@ export class UserResolver {
   private async cleanupUserToken(cache: Tedis, userId: string) {
     const foundToken = (await cache.hmget(userId, 'token'))[0];
     if (foundToken) {
-      console.log(`foundToken: ${foundToken}`);
       await cache.del(foundToken);
     }
     await cache.del(userId);
@@ -193,18 +192,14 @@ export class UserResolver {
 
   @Authorized()
   @Mutation(() => ResendSignUpTokenPaylod)
-  async resendUserSignUp(
-    @Arg('identifier') identifier: string,
-    @Ctx() ctx: AccountServiceContext
-  ) {
-    const userRepo = ctx.em.getRepository(User);
-    const user = await userRepo.findOneOrFail({
-      where: [{ username: identifier }, { email: identifier }]
-    });
+  async resendUserSignUp(@Ctx() ctx: AccountServiceContext) {
+    // TODO authorized decorator solves it
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const user = ctx.user!.data;
     if (user.pendingOperation !== PendingOperation.SIGN_UP) {
-      throw new UserAlreadyVerifiedError(identifier);
+      throw new UserAlreadyVerifiedError(user.username);
     }
-    await this.cleanupUserToken(ctx.verificationTokenCache, user.id)
+    await this.cleanupUserToken(ctx.verificationTokenCache, user.id);
 
     let token: string;
     try {
@@ -249,6 +244,7 @@ export class UserResolver {
         data: {
           ...user,
           // ! removing sensitive stuff from JWT
+          pendingOperation: undefined,
           password: undefined
         }
       },

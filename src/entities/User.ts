@@ -19,9 +19,10 @@ registerEnumType(PendingOperation, {
 @Directive(`@key(fields: "id")`)
 @ObjectType()
 @Entity()
-@Unique(['username', 'email'])
+@Unique(['username', 'email', 'alias'])
 @Unique(['username'])
 @Unique(['email'])
+@Unique(['alias'])
 export class User extends BaseEntity {
   @Field()
   @Column()
@@ -30,6 +31,15 @@ export class User extends BaseEntity {
   @Field()
   @Column()
   email!: string;
+
+  @Field({
+    nullable: true
+  })
+  @Column({
+    nullable: true,
+    default: undefined
+  })
+  alias?: string;
 
   @Column()
   password!: string;
