@@ -14,7 +14,7 @@ import {
 } from 'type-graphql';
 import jwt from 'jsonwebtoken';
 import { hashSync, genSaltSync, compare } from 'bcrypt';
-import { IsString } from 'class-validator';
+import { IsEmail, IsString } from 'class-validator';
 import { getConfig } from '../config';
 import { AccountServiceContext } from '../context';
 import { PendingOperation, User } from '../entities/User';
@@ -28,6 +28,7 @@ import {
   WrongPasswordError
 } from '../utils/exceptions';
 import { BasePayload } from './BasePayload';
+import { IsIdentifierAvailable } from '../constraints/IsIdentifierAvailable';
 
 @ObjectType({ implements: BasePayload })
 class SignUpUserPayload implements BasePayload {
@@ -46,7 +47,17 @@ class SignInUserPayload implements BasePayload {
 }
 
 @ObjectType({ implements: BasePayload })
-class ResetPasswordPayload implements BasePayload {
+class RequestPasswordResetPayload implements BasePayload {
+  message!: string;
+}
+
+@ObjectType({ implements: BasePayload })
+class RequestEmailChangePayload implements BasePayload {
+  message!: string;
+}
+
+@ObjectType({ implements: BasePayload })
+class ChangeUsernamePayload implements BasePayload {
   message!: string;
 }
 
@@ -56,6 +67,24 @@ class FindUserByIdentifierInput {
   @IsString()
   identifier!: string;
 }
+
+@ArgsType()
+class RequestEmailChangeInput {
+  @Field()
+  @IsEmail()
+  newEmail!: string;
+}
+
+@ArgsType()
+class ChangeUsernameInput {
+  @Field()
+  @IsIdentifierAvailable({
+    message: 'New username "$value" already used'
+  })
+  @IsString()
+  newUsername!: string;
+}
+
 @Resolver(() => User)
 export class UserResolver {
   private async createUserToken(
@@ -229,7 +258,7 @@ export class UserResolver {
     });
   }
 
-  @Mutation(() => ResetPasswordPayload)
+  @Mutation(() => RequestPasswordResetPayload)
   async requestPasswordReset(
     @Args() args: FindUserByIdentifierInput,
     @Ctx() ctx: AccountServiceContext
@@ -264,7 +293,7 @@ export class UserResolver {
       await ctx.verificationTokenCache.del(user.id);
       throw new NodemailerError(user.email, 'pwdResetTemplate');
     }
-    return plainToClass(ResetPasswordPayload, {
+    return plainToClass(RequestPasswordResetPayload, {
       message: 'Password request reset sent'
     });
   }

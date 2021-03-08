@@ -9,7 +9,7 @@ Account service for npns
 
 ## TODO
 * verification token cache certificates 
-* define pwd constraints
 * proper responses for error handling cases
 * Simplify config API if possible to make ASTs more understanadable
-* Limit on resend sign up
+* Request limit on resend sign up
+* Username, alias and password custom validator
