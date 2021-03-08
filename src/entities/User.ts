@@ -1,8 +1,9 @@
 import { Entity, Column, Unique } from 'typeorm';
-import { Directive, Field, ObjectType, registerEnumType } from 'type-graphql';
+import { Directive, Field, ObjectType, registerEnumType, UseMiddleware } from 'type-graphql';
 import { BaseEntity } from './Base';
+import { AccountOwnerGuard } from '../middlewares/AccountOwnerGuard';
 
-// TODO normally would prefer union types, but 
+// TODO normally would prefer union types, but not possible in type-graphql
 export enum PendingOperation {
   SIGN_UP,
   RESET_PASSWORD,
@@ -33,6 +34,7 @@ export class User extends BaseEntity {
   @Column()
   password!: string;
 
+  @UseMiddleware(AccountOwnerGuard)
   @Field(() => PendingOperation)
   @Column({
     type: 'enum',

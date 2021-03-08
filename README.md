@@ -11,5 +11,9 @@ Account service for npns
 * verification token cache certificates 
 * proper responses for error handling cases
 * Simplify config API if possible to make ASTs more understanadable
-* Request limit on resend sign up
 * Username, alias and password custom validator
+
+## TO CONSIDER ??
+* Request limit on ResendSignUp
+* schema directives on some fields with special behaviour
+  * for example AccountOwnerGuard

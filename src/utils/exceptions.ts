@@ -44,3 +44,12 @@ export class UserAlreadyVerifiedError extends Error {
     super(`User "${identifier}" is already verified after sign up`);
   }
 }
+
+export class AccountOwnerAccessError extends Error {
+  name = 'AccountOwnerAccessError';
+  constructor(public field: string) {
+    super(
+      `Attempting to access "${field}" which can be accessed only by account owner`
+    );
+  }
+}

@@ -10,7 +10,8 @@ import {
   Mutation,
   ObjectType,
   ArgsType,
-  Args
+  Args,
+  Authorized
 } from 'type-graphql';
 import jwt from 'jsonwebtoken';
 import { hashSync, genSaltSync, compare } from 'bcrypt';
@@ -35,6 +36,11 @@ class SignUpUserPayload implements BasePayload {
   message!: string;
   @Field(() => User)
   createdUser!: User;
+}
+
+@ObjectType({ implements: BasePayload })
+class ResendSignUpTokenPaylod implements BasePayload {
+  message!: string;
 }
 
 @ObjectType({ implements: BasePayload })
@@ -185,7 +191,8 @@ export class UserResolver {
     });
   }
 
-  @Mutation(() => SignUpUserPayload)
+  @Authorized()
+  @Mutation(() => ResendSignUpTokenPaylod)
   async resendUserSignUp(
     @Arg('identifier') identifier: string,
     @Ctx() ctx: AccountServiceContext
@@ -217,10 +224,11 @@ export class UserResolver {
       throw new NodemailerError(user.email, 'signUpTemplate');
     }
     return plainToClass(SignUpUserPayload, {
-      message: `Confirmation email resent to "${user.email}"`,
-      createdUser: user
+      message: `Confirmation email resent to "${user.email}"` // ,
+      // createdUser: user
     });
   }
+
   @Mutation(() => SignInUserPayload)
   async signInUser(
     @Arg('input') input: SignInUserContract,
