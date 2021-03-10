@@ -244,7 +244,11 @@ export class UserResolver {
     @Ctx() ctx: AccountServiceContext
   ) {
     const user = await ctx.em.findOne(User, {
-      where: [{ username: args.identifier }, { email: args.identifier }]
+      where: [
+        { username: args.identifier },
+        { email: args.identifier },
+        { alias: args.identifier }
+      ]
     });
     if (!user) {
       throw new UserNotFoundError(args.identifier);
