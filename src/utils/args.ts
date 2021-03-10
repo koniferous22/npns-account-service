@@ -37,3 +37,15 @@ export class ChangeAliasArgs {
   @IsString()
   password!: string;
 }
+
+@ArgsType()
+export class UpdatePasswordArgs {
+  @Field()
+  @IsNotEmpty()
+  @IsString()
+  newPassword!: string;
+
+  @Field()
+  @IsString()
+  password!: string;
+}

@@ -12,7 +12,7 @@ import {
   UseMiddleware
 } from 'type-graphql';
 import jwt from 'jsonwebtoken';
-import { hashSync, genSaltSync, compare } from 'bcrypt';
+import { hashSync, genSaltSync, compareSync } from 'bcrypt';
 import { AccountServiceContext } from '../context';
 import { PendingOperation, User } from '../entities/User';
 import { SignInUserContract, SignUpUserContract } from '../utils/inputTypes';
@@ -20,6 +20,7 @@ import {
   CacheCreateTokenError,
   NodemailerError,
   PendingProfileOperationError,
+  UpdatedWithEqualPasswordError,
   UserAlreadyVerifiedError,
   UserNotFoundError,
   WrongPasswordError
@@ -29,7 +30,8 @@ import { ValidatePasswordArgGuard } from '../middlewares/ValidatePasswordArgGuar
 import {
   FindUserByIdentifierArgs,
   ChangeAliasArgs,
-  RequestEmailChangeArgs
+  RequestEmailChangeArgs,
+  UpdatePasswordArgs
 } from '../utils/args';
 
 @ObjectType({ implements: BasePayload })
@@ -71,6 +73,10 @@ class ChangeAliasPayload implements BasePayload {
   updatedUser!: User;
 }
 
+@ObjectType({ implements: BasePayload })
+class UpdatePasswordPayload implements BasePayload {
+  message!: string;
+}
 @Resolver(() => User)
 export class UserResolver {
   @Query(() => User)
@@ -175,7 +181,7 @@ export class UserResolver {
     if (!user) {
       throw new UserNotFoundError(input.identifier);
     }
-    if (!compare(user.password, input.password)) {
+    if (!compareSync(user.password, input.password)) {
       throw new WrongPasswordError();
     }
     const jwtConfig = ctx.config.getConfig().jwt;
@@ -325,6 +331,34 @@ export class UserResolver {
     }
     return plainToClass(RequestEmailChangePayload, {
       message: `Email change request sent to new user email: "${args.newEmail}"`
+    });
+  }
+
+  @Authorized()
+  @UseMiddleware(ValidatePasswordArgGuard)
+  @Mutation(() => UpdatePasswordPayload)
+  async updatePassword(
+    @Args() args: UpdatePasswordArgs,
+    @Ctx() ctx: AccountServiceContext
+  ) {
+    // TODO authorized decorator solves it
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const userFromToken = ctx.user!.data;
+    const userRepo = ctx.em.getRepository(User);
+    const user = await userRepo.findOneOrFail(userFromToken);
+    if (user.pendingOperation) {
+      throw new PendingProfileOperationError(
+        user.username,
+        user.pendingOperation
+      );
+    }
+    if (compareSync(user.password, args.newPassword)) {
+      throw new UpdatedWithEqualPasswordError(user.username);
+    }
+    user.password = hashSync(args.newPassword, genSaltSync(8));
+    await userRepo.save(user);
+    return plainToClass(RequestEmailChangePayload, {
+      message: 'Password updated'
     });
   }
 }

@@ -69,3 +69,12 @@ export class ConfigError extends Error {
     super(errors.join('\n'));
   }
 }
+
+export class UpdatedWithEqualPasswordError extends Error {
+  name = 'UpdatedWithEqualPasswordError';
+  constructor(public identifier: string) {
+    super(
+      `Updated password should be different from current one (user: "${identifier}")`
+    );
+  }
+}
