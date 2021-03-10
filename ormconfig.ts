@@ -1,2 +1,2 @@
-import { getConfig } from './src/config/index';
-export default getConfig().orm;
+import { Config } from './src/config/index';
+export default Config.getInstance().getConfig().orm;

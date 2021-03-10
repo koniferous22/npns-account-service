@@ -1,7 +1,7 @@
-import { getConfig } from '../../config';
+import { Config } from '../../config';
 
 export const signUpTemplate = (token: string) => {
-  const { webAppAddress } = getConfig();
+  const { webAppAddress } = Config.getInstance().getConfig();
   const fullAdress = webAppAddress + '/confirm/registration/' + token;
   return {
     subject: 'NPNS Regoostration code',
@@ -12,7 +12,7 @@ export const signUpTemplate = (token: string) => {
 };
 
 export const pwdResetTemplate = (token: string) => {
-  const { webAppAddress } = getConfig();
+  const { webAppAddress } = Config.getInstance().getConfig();
   const fullAdress = webAppAddress + '/confirm/passwordChange/' + token;
   return {
     subject: 'NPNS Password Reset Link',
@@ -25,7 +25,7 @@ export const pwdResetTemplate = (token: string) => {
 };
 
 export const emailChangeTemplate = (token: string) => {
-  const { webAppAddress } = getConfig();
+  const { webAppAddress } = Config.getInstance().getConfig();
   const fullAdress = webAppAddress + '/confirm/emailChange/' + token;
   return {
     subject: 'NPNS Email Change Link',
@@ -41,7 +41,7 @@ export const notificationUsernameChangedTemplate = (
   oldAlias: string | null,
   newAlias: string
 ) => {
-  const { webAppAddress } = getConfig();
+  const { webAppAddress } = Config.getInstance().getConfig();
   const fullAdress = webAppAddress + '/me';
   return {
     subject: 'NPNS Username Change Notification',

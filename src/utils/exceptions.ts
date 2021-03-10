@@ -53,3 +53,10 @@ export class AccountOwnerAccessError extends Error {
     );
   }
 }
+
+export class ConfigError extends Error {
+  name = 'ConfigError';
+  constructor(public errors: string[]) {
+    super(errors.join('\n'));
+  }
+}

@@ -1,13 +1,16 @@
 import { Tedis } from 'tedis';
 import { getConnection } from 'typeorm';
-import { getConfig } from './config';
+import { Config } from './config';
 import { User } from './entities/User';
+import { Nodemailer } from './external/nodemailer';
+import { TokenCacheService } from './external/token-cache';
 
 export type AccountServiceContext = {
   em: ReturnType<ReturnType<typeof getConnection>['createEntityManager']>;
-  verificationTokenCache: Tedis;
+  nodemailer: Nodemailer;
+  tokenCache: TokenCacheService;
   user: {
-    data: Omit<User, 'password'>;
+    data: Omit<User, 'password' | 'pendingOperation'>;
   } | null;
-  config: ReturnType<typeof getConfig>;
+  config: Config;
 };

@@ -4,15 +4,16 @@ import { ApolloServer } from 'apollo-server';
 import gql from 'graphql-tag';
 import { buildSchema, createResolversMap } from 'type-graphql';
 import { createConnection } from 'typeorm';
-import { Tedis } from 'tedis';
 import { printSchemaWithDirectives } from '@graphql-tools/utils';
 import { UserResolver } from './resolvers/User';
 import { AccountServiceContext } from './context';
-import { getConfig } from './config';
+import { Config } from './config';
 import { authChecker } from './authChecker';
+import { Nodemailer } from './external/nodemailer';
+import { TokenCacheService } from './external/token-cache';
 
 const bootstrap = async () => {
-  const { port, graphqlPath, verificationToken } = getConfig();
+  const { port, graphqlPath } = Config.getInstance().getConfig();
   const connection = await createConnection();
   const typeGraphQLSchema = await buildSchema({
     resolvers: [UserResolver],
@@ -30,9 +31,10 @@ const bootstrap = async () => {
       const userFromRequest = req.headers.user as string;
       return {
         em: connection.createEntityManager(),
-        verificationTokenCache: new Tedis(verificationToken.cache),
+        nodemailer: new Nodemailer(),
+        tokenCache: new TokenCacheService(),
         user: userFromRequest ? JSON.parse(userFromRequest) : null,
-        config: getConfig()
+        config: Config.getInstance()
       } as AccountServiceContext;
     }
   });

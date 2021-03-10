@@ -1,25 +1,26 @@
 import nodemailer from 'nodemailer';
-import { getConfig } from '../../config';
+import { Config } from '../../config';
 import templates from './templates';
-
-let transporter: ReturnType<typeof nodemailer['createTransport']>;
-
-export const initTransport = () => {
-  const transport = nodemailer.createTransport(getConfig().nodemailer);
-  transporter = transport;
-}
-initTransport();
-
-export async function sendMail<T extends keyof typeof templates>(
-  recipient: string,
-  templateName: T,
-  ...args: Parameters<typeof templates[T]>
-) {
-  const email = {
-    from: getConfig().accountNotificationSenderEmail,
-    to: recipient,
-    // @ts-expect-error should work
-    ...templates[templateName](...args)
-  };
-  await transporter.sendMail(email);
+export class Nodemailer {
+  private _config: Config = Config.getInstance();
+  private _transporter!: ReturnType<typeof nodemailer['createTransport']>;
+  private initTransporter() {
+    return nodemailer.createTransport(this._config.getConfig().nodemailer);
+  }
+  constructor() {
+    this._transporter = this.initTransporter();
+  }
+  async sendMail<T extends keyof typeof templates>(
+    recipient: string,
+    templateName: T,
+    ...args: Parameters<typeof templates[T]>
+  ) {
+    const email = {
+      from: this._config.getConfig().accountNotificationSenderEmail,
+      to: recipient,
+      // @ts-expect-error should work
+      ...templates[templateName](...args)
+    };
+    await this._transporter.sendMail(email);
+  }
 }

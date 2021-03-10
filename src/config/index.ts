@@ -1,4 +1,5 @@
 import path from 'path';
+import { ConfigError } from '../utils/exceptions';
 import {
   resolveConfigNode,
   GetConfigValueByKeyString,
@@ -189,60 +190,76 @@ const configWithParser = {
   }
 };
 
-export type ConfigType = ResolveConfigAstNode<typeof configWithParser>;
+export type ResolvedConfigType = ResolveConfigAstNode<typeof configWithParser>;
 
-const resolveConfig: () => ConfigType = () => {
-  const { config, errors } = resolveConfigNode(configWithParser);
-  if (errors.length > 0) {
-    throw new Error(errors.join('\n'));
-  }
-  return config;
-};
-let config = resolveConfig();
-let settingsChanged = false;
+export class Config {
+  private _value: ResolvedConfigType;
+  private _settingsChanged: boolean;
 
-export const getConfig = () => {
-  if (settingsChanged) {
-    config = resolveConfig();
-    settingsChanged = false;
-  }
-  return config;
-};
-
-export function overrideConfig<KeyString extends string>(
-  keyString: KeyString,
-  newValue: GetConfigValueByKeyString<KeyString, typeof configWithParser>
-) {
-  const keys = keyString.split('.');
-  let current: ConfigAstNode = configWithParser;
-  keys.forEach((key) => {
-    switch (current.type) {
-      case 'node': {
-        current = current.children[key];
-        break;
-      }
-      case 'array': {
-        const index = parseInt(key, 10);
-        current = current.values[index];
-        break;
-      }
-      case 'leaf': {
-        throw new Error(`Key string "${keyString}" out of range`);
-      }
-      default: {
-        throw new Error(
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          `Encountered invalid node type: "${current && current!.type}"`
-        );
-      }
+  private static _instance: Config | null;
+  private resolveConfig() {
+    const { config, errors } = resolveConfigNode(configWithParser);
+    if (errors.length > 0) {
+      throw new ConfigError(errors);
     }
-  });
-  if (!['leaf'].includes(current.type)) {
-    throw new Error(
-      `Configuration key '${keyString}' references object and not leaf value`
-    );
+    return config;
   }
-  // @ts-expect-error Wrong ts inferring because of for-each
-  current.overridenValue = newValue.toString();
-  settingsChanged = true;
+
+  private constructor() {
+    this._value = this.resolveConfig();
+    this._settingsChanged = false;
+  }
+
+  getConfig() {
+    if (this._settingsChanged) {
+      this._value = this.resolveConfig();
+      this._settingsChanged = false;
+    }
+    return this._value;
+  }
+
+  override<KeyString extends string>(
+    keyString: KeyString,
+    newValue: GetConfigValueByKeyString<KeyString, typeof configWithParser>
+  ) {
+    const keys = keyString.split('.');
+    let current: ConfigAstNode = configWithParser;
+    keys.forEach((key) => {
+      switch (current.type) {
+        case 'node': {
+          current = current.children[key];
+          break;
+        }
+        case 'array': {
+          const index = parseInt(key, 10);
+          current = current.values[index];
+          break;
+        }
+        case 'leaf': {
+          throw new Error(`Key string "${keyString}" out of range`);
+        }
+        default: {
+          throw new Error(
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            `Encountered invalid node type: "${current && current!.type}"`
+          );
+        }
+      }
+    });
+    if (!['leaf'].includes(current.type)) {
+      throw new Error(
+        `Configuration key '${keyString}' references object and not leaf value`
+      );
+    }
+    // @ts-expect-error Wrong ts inferring because of for-each
+    current.overridenValue = newValue.toString();
+    this._settingsChanged = true;
+  }
+
+  public static getInstance() {
+    if (!Config._instance) {
+      Config._instance = new Config();
+    }
+    return Config._instance;
+  }
 }

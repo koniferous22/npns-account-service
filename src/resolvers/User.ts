@@ -1,6 +1,4 @@
 import { classToPlain, plainToClass } from 'class-transformer';
-import { randomBytes } from 'crypto';
-import { Tedis } from 'tedis';
 import {
   Query,
   Arg,
@@ -15,10 +13,8 @@ import {
 } from 'type-graphql';
 import jwt from 'jsonwebtoken';
 import { hashSync, genSaltSync, compare } from 'bcrypt';
-import { getConfig } from '../config';
 import { AccountServiceContext } from '../context';
 import { PendingOperation, User } from '../entities/User';
-import { sendMail } from '../external/nodemailer';
 import { SignInUserContract, SignUpUserContract } from '../utils/inputTypes';
 import {
   CacheCreateTokenError,
@@ -69,43 +65,6 @@ class ChangeAliasPayload implements BasePayload {
 
 @Resolver(() => User)
 export class UserResolver {
-  private async createUserToken(
-    cache: Tedis,
-    userId: string,
-    verificationTokenConfig: ReturnType<typeof getConfig>['verificationToken'],
-    payload?: string | undefined
-  ) {
-    const token = randomBytes(16).toString('hex');
-    await cache.hmset(
-      userId,
-      payload
-        ? {
-            token,
-            payload
-          }
-        : {
-            token
-          }
-    );
-    try {
-      await cache.set(token, userId);
-    } catch (e) {
-      await cache.del(userId);
-      throw e;
-    }
-    // await cache.set(userId, token);
-    await cache.expire(userId, verificationTokenConfig.expirationTime);
-    return token;
-  }
-
-  private async cleanupUserToken(cache: Tedis, userId: string) {
-    const foundToken = (await cache.hmget(userId, 'token'))[0];
-    if (foundToken) {
-      await cache.del(foundToken);
-    }
-    await cache.del(userId);
-  }
-
   @Query(() => User)
   userById(@Arg('id') id: string, @Ctx() ctx: AccountServiceContext) {
     return ctx.em.getRepository(User).findOneOrFail({ id });
@@ -138,11 +97,7 @@ export class UserResolver {
     // STEP 2: create verificationToken token
     let token: string;
     try {
-      token = await this.createUserToken(
-        ctx.verificationTokenCache,
-        newUser.id,
-        ctx.config.verificationToken
-      );
+      token = await ctx.tokenCache.createUserToken(newUser.id);
     } catch (e) {
       // rollback user creation
       await userRepo.remove(newUser);
@@ -154,10 +109,10 @@ export class UserResolver {
 
     // STEP 3: send confirmation email
     try {
-      await sendMail(newUser.email, 'signUpTemplate', token);
+      await ctx.nodemailer.sendMail(newUser.email, 'signUpTemplate', token);
     } catch (e) {
       await userRepo.remove(newUser);
-      await this.cleanupUserToken(ctx.verificationTokenCache, newUser.id);
+      await ctx.tokenCache.cleanupUserToken(newUser.id);
       throw new NodemailerError(newUser.email, 'signUpTemplate');
     }
     return plainToClass(SignUpUserPayload, {
@@ -171,31 +126,32 @@ export class UserResolver {
   async resendUserSignUp(@Ctx() ctx: AccountServiceContext) {
     // TODO authorized decorator solves it
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const user = ctx.user!.data;
+    const userFromToken = ctx.user!.data;
+    const user = await ctx.em.getRepository(User).findOneOrFail(userFromToken);
     if (user.pendingOperation !== PendingOperation.SIGN_UP) {
-      throw new UserAlreadyVerifiedError(user.username);
+      throw new UserAlreadyVerifiedError(userFromToken.username);
     }
-    await this.cleanupUserToken(ctx.verificationTokenCache, user.id);
+    await ctx.tokenCache.cleanupUserToken(userFromToken.id);
 
     let token: string;
     try {
-      token = await this.createUserToken(
-        ctx.verificationTokenCache,
-        user.id,
-        ctx.config.verificationToken
-      );
+      token = await ctx.tokenCache.createUserToken(userFromToken.id);
     } catch (e) {
       throw new CacheCreateTokenError(user.username, PendingOperation.SIGN_UP);
     }
 
     try {
-      await sendMail(user.email, 'signUpTemplate', token);
+      await ctx.nodemailer.sendMail(
+        userFromToken.email,
+        'signUpTemplate',
+        token
+      );
     } catch (e) {
-      await this.cleanupUserToken(ctx.verificationTokenCache, user.id);
-      throw new NodemailerError(user.email, 'signUpTemplate');
+      await ctx.tokenCache.cleanupUserToken(userFromToken.id);
+      throw new NodemailerError(userFromToken.email, 'signUpTemplate');
     }
     return plainToClass(SignUpUserPayload, {
-      message: `Confirmation email resent to "${user.email}"` // ,
+      message: `Confirmation email resent to "${userFromToken.email}"` // ,
       // createdUser: user
     });
   }
@@ -214,7 +170,7 @@ export class UserResolver {
     if (!compare(user.password, input.password)) {
       throw new WrongPasswordError();
     }
-    const jwtConfig = ctx.config.jwt;
+    const jwtConfig = ctx.config.getConfig().jwt;
     const token = jwt.sign(
       {
         data: {
@@ -259,11 +215,7 @@ export class UserResolver {
 
     let token: string;
     try {
-      token = await this.createUserToken(
-        ctx.verificationTokenCache,
-        user.id,
-        ctx.config.verificationToken
-      );
+      token = await ctx.tokenCache.createUserToken(user.id);
     } catch (e) {
       // rollback user creation
       throw new CacheCreateTokenError(
@@ -272,9 +224,9 @@ export class UserResolver {
       );
     }
     try {
-      await sendMail(user.email, 'pwdResetTemplate', token);
+      await ctx.nodemailer.sendMail(user.email, 'pwdResetTemplate', token);
     } catch (e) {
-      await ctx.verificationTokenCache.del(user.id);
+      await ctx.tokenCache.cleanupUserToken(user.id);
       throw new NodemailerError(user.email, 'pwdResetTemplate');
     }
     return plainToClass(RequestPasswordResetPayload, {
@@ -297,7 +249,7 @@ export class UserResolver {
     user.alias = args.newAlias;
     await userRepo.save(user);
     try {
-      await sendMail(
+      await ctx.nodemailer.sendMail(
         user.email,
         'notificationUsernameChangedTemplate',
         oldAlias ?? null,
