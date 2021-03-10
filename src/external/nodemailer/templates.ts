@@ -37,16 +37,20 @@ export const emailChangeTemplate = (token: string) => {
   } as const;
 };
 
-export const usernameChangeTemplate = (token: string) => {
+export const notificationUsernameChangedTemplate = (
+  oldAlias: string | null,
+  newAlias: string
+) => {
   const { webAppAddress } = getConfig();
-  const fullAdress = webAppAddress + '/confirm/usernameChange/' + token;
+  const fullAdress = webAppAddress + '/me';
   return {
-    subject: 'NPNS Username Change Link',
-    text: 'Copy following address to confirm your new username:\n' + fullAdress,
-    html:
-      '<p>Click <a href="' +
-      fullAdress +
-      '">here</a> to confirm your new finely chosen username adventurer</p>'
+    subject: 'NPNS Username Change Notification',
+    text: oldAlias
+      ? `IMPORTANT: your public username was changed from "${oldAlias}" to "${newAlias}". If you are not aware of this change, please go to ${fullAdress} to fix the changes.`
+      : `IMPORTANT: your public username was changed to "${newAlias}". If you are not aware of this change, please go to ${fullAdress} to fix the changes.`,
+    html: oldAlias
+      ? `<p>IMPORTANT: your public username was changed from "${oldAlias}" to "${newAlias}". If you are not aware of this change, please go to <a href="${fullAdress}">your profile</a> to fix the changes.</p>`
+      : `<p>IMPORTANT: your public username was changed to "${newAlias}". If you are not aware of this change, please go to <a href="${fullAdress}">your profile</a> to fix the changes.</p>`
   } as const;
 };
 
@@ -55,5 +59,5 @@ export default {
   signUpTemplate,
   pwdResetTemplate,
   emailChangeTemplate,
-  usernameChangeTemplate
+  notificationUsernameChangedTemplate
 };

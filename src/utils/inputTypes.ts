@@ -1,4 +1,4 @@
-import { IsString, IsEmail, MinLength, IsAlphanumeric } from 'class-validator';
+import { IsString, IsEmail, MinLength, IsAlphanumeric, IsNotEmpty } from 'class-validator';
 import { InputType, Field } from 'type-graphql';
 import { IsIdentifierAvailable } from '../constraints/IsIdentifierAvailable';
 
@@ -7,10 +7,12 @@ const MIN_PASSWORD_LENGTH = 5;
 @InputType()
 export class SignInUserContract {
   @Field()
+  @IsNotEmpty()
   @IsString()
   identifier!: string;
 
   @Field()
+  @IsNotEmpty()
   @IsString()
   password!: string;
 }
@@ -18,6 +20,7 @@ export class SignInUserContract {
 @InputType()
 export class SignUpUserContract {
   @Field()
+  @IsNotEmpty()
   @IsAlphanumeric()
   // TODO custom username and alias validation
   @IsIdentifierAvailable({
@@ -26,6 +29,7 @@ export class SignUpUserContract {
   username!: string;
 
   @Field()
+  @IsNotEmpty()
   @IsEmail()
   @IsIdentifierAvailable({
     message: 'Email "$value" already used'

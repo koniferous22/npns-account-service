@@ -1,5 +1,11 @@
 import { Entity, Column, Unique } from 'typeorm';
-import { Directive, Field, ObjectType, registerEnumType, UseMiddleware } from 'type-graphql';
+import {
+  Directive,
+  Field,
+  ObjectType,
+  registerEnumType,
+  UseMiddleware
+} from 'type-graphql';
 import { BaseEntity } from './Base';
 import { AccountOwnerGuard } from '../middlewares/AccountOwnerGuard';
 
@@ -7,13 +13,13 @@ import { AccountOwnerGuard } from '../middlewares/AccountOwnerGuard';
 export enum PendingOperation {
   SIGN_UP,
   RESET_PASSWORD,
-  CHANGE_EMAIL,
-  CHANGE_USERNAME
+  CHANGE_EMAIL
 }
 
 registerEnumType(PendingOperation, {
   name: 'PendingOperation',
-  description: 'Description of pending update that has to be confirmed via email'
+  description:
+    'Description of pending update that has to be confirmed via email'
 });
 
 @Directive(`@key(fields: "id")`)

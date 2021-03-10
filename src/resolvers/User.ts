@@ -9,18 +9,17 @@ import {
   Field,
   Mutation,
   ObjectType,
-  ArgsType,
   Args,
-  Authorized
+  Authorized,
+  UseMiddleware
 } from 'type-graphql';
 import jwt from 'jsonwebtoken';
 import { hashSync, genSaltSync, compare } from 'bcrypt';
-import { IsEmail, IsString } from 'class-validator';
 import { getConfig } from '../config';
 import { AccountServiceContext } from '../context';
 import { PendingOperation, User } from '../entities/User';
 import { sendMail } from '../external/nodemailer';
-import { SignInUserContract, SignUpUserContract } from '../utils/contracts';
+import { SignInUserContract, SignUpUserContract } from '../utils/inputTypes';
 import {
   CacheCreateTokenError,
   NodemailerError,
@@ -29,7 +28,8 @@ import {
   WrongPasswordError
 } from '../utils/exceptions';
 import { BasePayload } from './BasePayload';
-import { IsIdentifierAvailable } from '../constraints/IsIdentifierAvailable';
+import { ValidatePasswordArgGuard } from '../middlewares/ValidatePasswordArgGuard';
+import { FindUserByIdentifierArgs, ChangeAliasArgs } from '../utils/args';
 
 @ObjectType({ implements: BasePayload })
 class SignUpUserPayload implements BasePayload {
@@ -65,30 +65,6 @@ class RequestEmailChangePayload implements BasePayload {
 @ObjectType({ implements: BasePayload })
 class ChangeAliasPayload implements BasePayload {
   message!: string;
-}
-
-@ArgsType()
-class FindUserByIdentifierInput {
-  @Field()
-  @IsString()
-  identifier!: string;
-}
-
-@ArgsType()
-class RequestEmailChangeInput {
-  @Field()
-  @IsEmail()
-  newEmail!: string;
-}
-
-@ArgsType()
-class ChangeAliasInput {
-  @Field()
-  @IsIdentifierAvailable({
-    message: 'New username "$value" already used'
-  })
-  @IsString()
-  newUsername!: string;
 }
 
 @Resolver(() => User)
@@ -264,7 +240,7 @@ export class UserResolver {
 
   @Mutation(() => RequestPasswordResetPayload)
   async requestPasswordReset(
-    @Args() args: FindUserByIdentifierInput,
+    @Args() args: FindUserByIdentifierArgs,
     @Ctx() ctx: AccountServiceContext
   ) {
     const user = await ctx.em.findOne(User, {
@@ -299,6 +275,42 @@ export class UserResolver {
     }
     return plainToClass(RequestPasswordResetPayload, {
       message: 'Password request reset sent'
+    });
+  }
+
+  @Authorized()
+  @UseMiddleware(ValidatePasswordArgGuard)
+  @Mutation(() => ChangeAliasPayload)
+  async changeAlias(
+    @Args() args: ChangeAliasArgs,
+    @Ctx() ctx: AccountServiceContext
+  ) {
+    const userRepo = ctx.em.getRepository(User);
+    // NOTE authorized decorator should solve it
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const user = ctx.user!.data;
+    const oldAlias = user.alias;
+    user.alias = args.newAlias;
+    await userRepo.save(user);
+    try {
+      await sendMail(
+        user.email,
+        'notificationUsernameChangedTemplate',
+        oldAlias ?? null,
+        args.newAlias
+      );
+    } catch (e) {
+      user.alias = oldAlias;
+      await userRepo.save(user);
+      throw new NodemailerError(
+        user.email,
+        'notificationUsernameChangedTemplate'
+      );
+    }
+    return plainToClass(ChangeAliasPayload, {
+      message: oldAlias
+        ? `Alias updated from "${oldAlias}" to "${user.alias}`
+        : `Alias set to "${user.alias}"`
     });
   }
 }
