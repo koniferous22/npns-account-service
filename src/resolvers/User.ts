@@ -19,13 +19,18 @@ import { SignInUserContract, SignUpUserContract } from '../utils/inputTypes';
 import {
   CacheCreateTokenError,
   NodemailerError,
+  PendingProfileOperationError,
   UserAlreadyVerifiedError,
   UserNotFoundError,
   WrongPasswordError
 } from '../utils/exceptions';
 import { BasePayload } from './BasePayload';
 import { ValidatePasswordArgGuard } from '../middlewares/ValidatePasswordArgGuard';
-import { FindUserByIdentifierArgs, ChangeAliasArgs } from '../utils/args';
+import {
+  FindUserByIdentifierArgs,
+  ChangeAliasArgs,
+  RequestEmailChangeArgs
+} from '../utils/args';
 
 @ObjectType({ implements: BasePayload })
 class SignUpUserPayload implements BasePayload {
@@ -49,7 +54,7 @@ class SignInUserPayload implements BasePayload {
 }
 
 @ObjectType({ implements: BasePayload })
-class RequestPasswordResetPayload implements BasePayload {
+class ForgotPasswordPayload implements BasePayload {
   message!: string;
 }
 
@@ -61,6 +66,9 @@ class RequestEmailChangePayload implements BasePayload {
 @ObjectType({ implements: BasePayload })
 class ChangeAliasPayload implements BasePayload {
   message!: string;
+
+  @Field(() => User)
+  updatedUser!: User;
 }
 
 @Resolver(() => User)
@@ -194,8 +202,8 @@ export class UserResolver {
     });
   }
 
-  @Mutation(() => RequestPasswordResetPayload)
-  async requestPasswordReset(
+  @Mutation(() => ForgotPasswordPayload)
+  async forgotPassword(
     @Args() args: FindUserByIdentifierArgs,
     @Ctx() ctx: AccountServiceContext
   ) {
@@ -210,7 +218,7 @@ export class UserResolver {
       throw new UserNotFoundError(args.identifier);
     }
 
-    user.pendingOperation = PendingOperation.RESET_PASSWORD;
+    user.pendingOperation = PendingOperation.FORGOT_PASSWORD;
     await ctx.em.getRepository(User).save(user);
 
     let token: string;
@@ -220,7 +228,7 @@ export class UserResolver {
       // rollback user creation
       throw new CacheCreateTokenError(
         args.identifier,
-        PendingOperation.RESET_PASSWORD
+        PendingOperation.FORGOT_PASSWORD
       );
     }
     try {
@@ -229,7 +237,7 @@ export class UserResolver {
       await ctx.tokenCache.cleanupUserToken(user.id);
       throw new NodemailerError(user.email, 'pwdResetTemplate');
     }
-    return plainToClass(RequestPasswordResetPayload, {
+    return plainToClass(ForgotPasswordPayload, {
       message: 'Password request reset sent'
     });
   }
@@ -266,7 +274,57 @@ export class UserResolver {
     return plainToClass(ChangeAliasPayload, {
       message: oldAlias
         ? `Alias updated from "${oldAlias}" to "${user.alias}`
-        : `Alias set to "${user.alias}"`
+        : `Alias set to "${user.alias}"`,
+      updatedUser: user
+    });
+  }
+
+  @Authorized()
+  @UseMiddleware(ValidatePasswordArgGuard)
+  @Mutation(() => RequestEmailChangePayload)
+  async requestEmailChange(
+    @Args() args: RequestEmailChangeArgs,
+    @Ctx() ctx: AccountServiceContext
+  ) {
+    // TODO authorized decorator solves it
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const userFromToken = ctx.user!.data;
+    const userRepo = ctx.em.getRepository(User);
+    const user = await userRepo.findOneOrFail(userFromToken);
+    if (user.pendingOperation) {
+      throw new PendingProfileOperationError(
+        user.username,
+        user.pendingOperation
+      );
+    }
+    user.pendingOperation = PendingOperation.CHANGE_EMAIL;
+    await userRepo.save(user);
+
+    let token: string;
+    try {
+      token = await ctx.tokenCache.createUserToken(user.id, args.newEmail);
+    } catch (e) {
+      user.pendingOperation = null;
+      await userRepo.save(user);
+      throw new CacheCreateTokenError(
+        user.username,
+        PendingOperation.CHANGE_EMAIL
+      );
+    }
+    try {
+      await ctx.nodemailer.sendMail(
+        args.newEmail,
+        'emailChangeTemplate',
+        token
+      );
+    } catch (e) {
+      user.pendingOperation = null;
+      await userRepo.save(user);
+      await ctx.tokenCache.cleanupUserToken(user.id);
+      throw new NodemailerError(args.newEmail, 'emailChangeTemplate');
+    }
+    return plainToClass(RequestEmailChangePayload, {
+      message: `Email change request sent to new user email: "${args.newEmail}"`
     });
   }
 }

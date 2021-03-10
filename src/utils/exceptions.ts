@@ -45,6 +45,15 @@ export class UserAlreadyVerifiedError extends Error {
   }
 }
 
+export class PendingProfileOperationError extends Error {
+  name = 'PendingProfileOperationError';
+  constructor(public identifier: string, operationType: PendingOperation) {
+    super(
+      `User "${identifier}" has already operation "${operationType}" in progress`
+    );
+  }
+}
+
 export class AccountOwnerAccessError extends Error {
   name = 'AccountOwnerAccessError';
   constructor(public field: string) {

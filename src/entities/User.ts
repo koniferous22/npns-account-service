@@ -12,7 +12,7 @@ import { AccountOwnerGuard } from '../middlewares/AccountOwnerGuard';
 // TODO normally would prefer union types, but not possible in type-graphql
 export enum PendingOperation {
   SIGN_UP,
-  RESET_PASSWORD,
+  FORGOT_PASSWORD,
   CHANGE_EMAIL
 }
 

@@ -13,7 +13,14 @@ export class FindUserByIdentifierArgs {
 export class RequestEmailChangeArgs {
   @Field()
   @IsEmail()
+  @IsIdentifierAvailable({
+    message: 'New email "$value" already used'
+  })
   newEmail!: string;
+
+  @Field()
+  @IsString()
+  password!: string;
 }
 
 @ArgsType()
