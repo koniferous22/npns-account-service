@@ -10,6 +10,24 @@ export class FindUserByIdentifierArgs {
 }
 
 @ArgsType()
+export class ValidateIdentifiersAvailableArgs {
+  @Field()
+  @IsEmail()
+  @IsIdentifierAvailable({
+    message: 'New email "$value" already used'
+  })
+  email!: string;
+
+  @Field()
+  @IsNotEmpty()
+  @IsIdentifierAvailable({
+    message: 'New username "$value" already used'
+  })
+  @IsString()
+  usernameOrAlias!: string;
+}
+
+@ArgsType()
 export class ConfirmTokenArgs {
   @Field()
   @IsString()
@@ -46,7 +64,7 @@ export class ChangeAliasArgs {
 }
 
 @ArgsType()
-export class UpdatePasswordArgs {
+export class UpdateOrValidatePasswordArgs {
   @Field()
   @IsNotEmpty()
   @IsString()
@@ -58,7 +76,7 @@ export class UpdatePasswordArgs {
 }
 
 @ArgsType()
-export class SubmitPasswordResetArgs {
+export class SubmitOrValidateForgottenPasswordArgs {
   @Field()
   @IsNotEmpty()
   @IsString()

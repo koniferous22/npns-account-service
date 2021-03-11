@@ -35,9 +35,10 @@ import {
   FindUserByIdentifierArgs,
   ChangeAliasArgs,
   RequestEmailChangeArgs,
-  UpdatePasswordArgs,
-  SubmitPasswordResetArgs,
-  ConfirmTokenArgs
+  UpdateOrValidatePasswordArgs,
+  SubmitOrValidateForgottenPasswordArgs,
+  ConfirmTokenArgs,
+  ValidateIdentifiersAvailableArgs
 } from '../utils/args';
 
 @ObjectType({ implements: BasePayload })
@@ -126,6 +127,52 @@ export class UserResolver {
         { alias: identifier }
       ]
     });
+  }
+
+  @Query(() => Boolean)
+  validateIdentifiersAvailable(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    @Args() identifiers: ValidateIdentifiersAvailableArgs,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    @Ctx() ctx: AccountServiceContext
+  ) {
+    // NOTE just plain response, decorators do the work
+    return true;
+  }
+
+  @Authorized()
+  @Query(() => Boolean)
+  async validateUpdatedPasswordWhenSignedId(
+    @Args() args: UpdateOrValidatePasswordArgs,
+    @Ctx() ctx: AccountServiceContext
+  ) {
+    // TODO authorized decorator solves it
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const userFromToken = ctx.user!.data;
+    const userRepo = ctx.em.getRepository(User);
+    const user = await userRepo.findOneOrFail(userFromToken);
+    // NOTE returs whether new pwd is different from current pwd
+    return !compareSync(args.newPassword, user.password);
+  }
+
+  @Authorized()
+  @Query(() => Boolean)
+  async validateUpdatedPasswordWhenForgotten(
+    @Args() args: SubmitOrValidateForgottenPasswordArgs,
+    @Ctx() ctx: AccountServiceContext
+  ) {
+    const tokenCache = ctx.tokenCache.getCache();
+    const id = await tokenCache.get(args.token);
+    if (!id) {
+      throw new TokenNotFoundError(
+        args.token,
+        PendingOperation.FORGOT_PASSWORD
+      );
+    }
+    const userRepo = ctx.em.getRepository(User);
+    const user = await userRepo.findOneOrFail(id);
+    // NOTE returs whether new pwd is different from current pwd
+    return !compareSync(args.newPassword, user.password);
   }
 
   @Mutation(() => SignUpUserPayload)
@@ -376,7 +423,7 @@ export class UserResolver {
   @UseMiddleware(ValidatePasswordArgGuard)
   @Mutation(() => UpdatePasswordPayload)
   async updatePassword(
-    @Args() args: UpdatePasswordArgs,
+    @Args() args: UpdateOrValidatePasswordArgs,
     @Ctx() ctx: AccountServiceContext
   ) {
     // TODO authorized decorator solves it
@@ -506,7 +553,7 @@ export class UserResolver {
 
   @Mutation(() => SubmitPasswordResetPayload)
   async submitPasswordReset(
-    @Args() args: SubmitPasswordResetArgs,
+    @Args() args: SubmitOrValidateForgottenPasswordArgs,
     @Ctx() ctx: AccountServiceContext
   ) {
     // NOTE: copypaste, in case of extensive reuse will be extracted to function or sth

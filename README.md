@@ -13,6 +13,7 @@ Account service for npns
 * Simplify config API if possible to make ASTs more understanadable
 * password custom validator
 * Email Forms instead of confirmation link
+* bcrypt validation decorator
 
 ## TO CONSIDER ??
 * Request limit on ResendSignUp
