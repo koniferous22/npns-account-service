@@ -12,18 +12,22 @@ import {
   UseMiddleware
 } from 'type-graphql';
 import jwt from 'jsonwebtoken';
-import { hashSync, genSaltSync, compareSync } from 'bcrypt';
+import { hashSync, genSaltSync, compareSync, compare } from 'bcrypt';
 import { AccountServiceContext } from '../context';
 import { PendingOperation, User } from '../entities/User';
 import { SignInUserContract, SignUpUserContract } from '../utils/inputTypes';
 import {
+  CacheCleanupError,
   CacheCreateTokenError,
   NodemailerError,
-  PendingProfileOperationError,
+  PayloadMissingError,
+  PendingProfileOperationInProgressError,
+  TokenNotFoundError,
   UpdatedWithEqualPasswordError,
   UserAlreadyVerifiedError,
   UserNotFoundError,
-  WrongPasswordError
+  WrongPasswordError,
+  WrongPendingOperationError
 } from '../utils/exceptions';
 import { BasePayload } from './BasePayload';
 import { ValidatePasswordArgGuard } from '../middlewares/ValidatePasswordArgGuard';
@@ -77,6 +81,24 @@ class ChangeAliasPayload implements BasePayload {
 class UpdatePasswordPayload implements BasePayload {
   message!: string;
 }
+
+@ObjectType({ implements: BasePayload })
+class ConfirmSignUpTokenPayload implements BasePayload {
+  message!: string;
+}
+
+@ObjectType({ implements: BasePayload })
+class ConfirmEmailResetTokenPayload implements BasePayload {
+  message!: string;
+
+  @Field(() => User)
+  updatedUser!: User;
+}
+
+@ObjectType({ implements: BasePayload })
+class ValidatePasswordResetTokenPayload implements BasePayload {
+  message!: string;
+}
 @Resolver(() => User)
 export class UserResolver {
   @Query(() => User)
@@ -105,6 +127,8 @@ export class UserResolver {
       ...userPlainObj,
       password: hashSync(userPlainObj.password, genSaltSync(8))
     });
+    console.log('newUser.password');
+    console.log(newUser.password);
     // STEP 1: save user
     await userRepo.save(newUser);
 
@@ -181,7 +205,7 @@ export class UserResolver {
     if (!user) {
       throw new UserNotFoundError(input.identifier);
     }
-    if (!compareSync(user.password, input.password)) {
+    if (!compareSync(input.password, user.password)) {
       throw new WrongPasswordError();
     }
     const jwtConfig = ctx.config.getConfig().jwt;
@@ -298,7 +322,7 @@ export class UserResolver {
     const userRepo = ctx.em.getRepository(User);
     const user = await userRepo.findOneOrFail(userFromToken);
     if (user.pendingOperation) {
-      throw new PendingProfileOperationError(
+      throw new PendingProfileOperationInProgressError(
         user.username,
         user.pendingOperation
       );
@@ -347,18 +371,121 @@ export class UserResolver {
     const userRepo = ctx.em.getRepository(User);
     const user = await userRepo.findOneOrFail(userFromToken);
     if (user.pendingOperation) {
-      throw new PendingProfileOperationError(
+      throw new PendingProfileOperationInProgressError(
         user.username,
         user.pendingOperation
       );
     }
-    if (compareSync(user.password, args.newPassword)) {
+    if (compareSync(args.newPassword, user.password)) {
       throw new UpdatedWithEqualPasswordError(user.username);
     }
     user.password = hashSync(args.newPassword, genSaltSync(8));
     await userRepo.save(user);
     return plainToClass(RequestEmailChangePayload, {
       message: 'Password updated'
+    });
+  }
+
+  @Mutation(() => ConfirmSignUpTokenPayload)
+  async confirmSignUpToken(
+    @Arg('token') token: string,
+    @Ctx() ctx: AccountServiceContext
+  ) {
+    const id = await ctx.tokenCache.getCache().get(token);
+    if (!id) {
+      throw new TokenNotFoundError(token, PendingOperation.SIGN_UP);
+    }
+    const userRepo = ctx.em.getRepository(User);
+    const user = await userRepo.findOneOrFail(id);
+    if (user.pendingOperation !== PendingOperation.SIGN_UP) {
+      throw new WrongPendingOperationError(
+        user.username,
+        PendingOperation.SIGN_UP,
+        user.pendingOperation
+      );
+    }
+    try {
+      // TODO in case when partial cleanup fails, cache will have to rely on expiration times
+      await ctx.tokenCache.cleanupUserToken(user.id);
+    } catch (e) {
+      throw new CacheCleanupError(user.id, PendingOperation.SIGN_UP);
+    }
+    user.pendingOperation = null;
+
+    console.log('user');
+    console.log(user);
+    // NOTE can throw exception if error updating
+    await userRepo.save(user);
+    return plainToClass(ConfirmSignUpTokenPayload, {
+      message: `User "${user.username}" verified`
+    });
+  }
+
+  @Authorized()
+  @Mutation(() => ConfirmEmailResetTokenPayload)
+  async confirmEmailResetToken(
+    @Arg('token') token: string,
+    @Ctx() ctx: AccountServiceContext
+  ) {
+    const tokenCache = ctx.tokenCache.getCache();
+    const id = await tokenCache.get(token);
+    if (!id) {
+      throw new TokenNotFoundError(token, PendingOperation.CHANGE_EMAIL);
+    }
+    const userRepo = ctx.em.getRepository(User);
+    const user = await userRepo.findOneOrFail(id);
+    const newEmail = await tokenCache.hget(id.toString(), 'payload');
+    if (!newEmail) {
+      throw new PayloadMissingError(
+        user.username,
+        PendingOperation.CHANGE_EMAIL,
+        token
+      );
+    }
+    if (user.pendingOperation !== PendingOperation.CHANGE_EMAIL) {
+      throw new WrongPendingOperationError(
+        user.username,
+        PendingOperation.CHANGE_EMAIL,
+        user.pendingOperation
+      );
+    }
+    try {
+      // TODO in case when partial cleanup fails, cache will have to rely on expiration times
+      await ctx.tokenCache.cleanupUserToken(user.id);
+    } catch (e) {
+      throw new CacheCleanupError(user.id, PendingOperation.SIGN_UP);
+    }
+    user.pendingOperation = null;
+    user.email = newEmail;
+
+    // NOTE can throw exception if error updating
+    await userRepo.save(user);
+    return plainToClass(ConfirmEmailResetTokenPayload, {
+      message: `User "${user.username}" verified`,
+      updatedUser: user
+    });
+  }
+
+  @Mutation(() => ValidatePasswordResetTokenPayload)
+  async validatePasswordResetToken(
+    @Arg('token') token: string,
+    @Ctx() ctx: AccountServiceContext
+  ) {
+    const id = await ctx.tokenCache.getCache().get(token);
+    if (!id) {
+      throw new TokenNotFoundError(token, PendingOperation.FORGOT_PASSWORD);
+    }
+    const userRepo = ctx.em.getRepository(User);
+    const user = await userRepo.findOneOrFail(id);
+    if (user.pendingOperation !== PendingOperation.FORGOT_PASSWORD) {
+      throw new WrongPendingOperationError(
+        user.username,
+        PendingOperation.FORGOT_PASSWORD,
+        user.pendingOperation
+      );
+    }
+    return plainToClass(ValidatePasswordResetTokenPayload, {
+      message: `Password reset token "${token}" valid`
     });
   }
 }

@@ -17,7 +17,7 @@ export const ValidatePasswordArgGuard: MiddlewareFn<AccountServiceContext> = asy
   const userFromDb = await context.em
     .getRepository(User)
     .findOneOrFail(context.user.data);
-  if (!compareSync(userFromDb.password, args.password)) {
+  if (!compareSync(args.password, userFromDb.password)) {
     throw new WrongPasswordError();
   }
   return next();

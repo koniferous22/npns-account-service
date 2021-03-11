@@ -27,6 +27,18 @@ export class CacheCreateTokenError extends Error {
   }
 }
 
+export class CacheCleanupError extends Error {
+  name = 'CacheCleanupError';
+  constructor(
+    public identifier: string,
+    public executedOperation: PendingOperation
+  ) {
+    super(
+      `Couldn't perform cleanup of key "${identifier}" during operation: ${executedOperation}`
+    );
+  }
+}
+
 type TemplateType = keyof typeof templates;
 
 export class NodemailerError extends Error {
@@ -45,9 +57,12 @@ export class UserAlreadyVerifiedError extends Error {
   }
 }
 
-export class PendingProfileOperationError extends Error {
-  name = 'PendingProfileOperationError';
-  constructor(public identifier: string, operationType: PendingOperation) {
+export class PendingProfileOperationInProgressError extends Error {
+  name = 'PendingProfileOperationInProgressError';
+  constructor(
+    public identifier: string,
+    public operationType: PendingOperation
+  ) {
     super(
       `User "${identifier}" has already operation "${operationType}" in progress`
     );
@@ -75,6 +90,39 @@ export class UpdatedWithEqualPasswordError extends Error {
   constructor(public identifier: string) {
     super(
       `Updated password should be different from current one (user: "${identifier}")`
+    );
+  }
+}
+
+export class PayloadMissingError extends Error {
+  name = 'PayloadMissingError';
+  constructor(
+    public identifier: string,
+    public pendingOperation: PendingOperation,
+    public token: string
+  ) {
+    super(
+      `Profile operation "${pendingOperation}" for user "${identifier}", with token "${token}" has missing payload`
+    );
+  }
+}
+
+export class TokenNotFoundError extends Error {
+  name = 'TokenNotFoundError';
+  constructor(public token: string, public pendingOperation: PendingOperation) {
+    super(`Token "${token}" for operation "${pendingOperation}" not found`);
+  }
+}
+
+export class WrongPendingOperationError extends Error {
+  name = 'WrongPendingOperationError';
+  constructor(
+    public identifier: string,
+    public expectedOperationType: PendingOperation,
+    public actualOperationType: PendingOperation | null
+  ) {
+    super(
+      `Expected operation "${expectedOperationType}" for user "${identifier}", got "${actualOperationType}"`
     );
   }
 }

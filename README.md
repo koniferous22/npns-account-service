@@ -12,6 +12,7 @@ Account service for npns
 * proper responses for error handling cases
 * Simplify config API if possible to make ASTs more understanadable
 * password custom validator
+* Email Forms instead of confirmation link
 
 ## TO CONSIDER ??
 * Request limit on ResendSignUp

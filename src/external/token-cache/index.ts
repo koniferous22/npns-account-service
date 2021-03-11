@@ -13,6 +13,10 @@ export class TokenCacheService {
     this._cache = this.initializeCache();
   }
 
+  getCache() {
+    return this._cache;
+  }
+
   async createUserToken(userId: string, payload?: string | undefined) {
     const token = randomBytes(16).toString('hex');
     await this._cache.hmset(
@@ -32,7 +36,6 @@ export class TokenCacheService {
       await this._cache.del(userId);
       throw e;
     }
-    // await this._cache.set(userId, token);
     await this._cache.expire(
       userId,
       this._config.getConfig().verificationToken.expirationTime
