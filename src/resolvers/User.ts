@@ -12,7 +12,7 @@ import {
   UseMiddleware
 } from 'type-graphql';
 import jwt from 'jsonwebtoken';
-import { hashSync, genSaltSync, compareSync, compare } from 'bcrypt';
+import { hashSync, genSaltSync, compareSync } from 'bcrypt';
 import { AccountServiceContext } from '../context';
 import { PendingOperation, User } from '../entities/User';
 import { SignInUserContract, SignUpUserContract } from '../utils/inputTypes';
@@ -35,7 +35,9 @@ import {
   FindUserByIdentifierArgs,
   ChangeAliasArgs,
   RequestEmailChangeArgs,
-  UpdatePasswordArgs
+  UpdatePasswordArgs,
+  SubmitPasswordResetArgs,
+  ConfirmTokenArgs
 } from '../utils/args';
 
 @ObjectType({ implements: BasePayload })
@@ -99,6 +101,12 @@ class ConfirmEmailResetTokenPayload implements BasePayload {
 class ValidatePasswordResetTokenPayload implements BasePayload {
   message!: string;
 }
+
+@ObjectType({ implements: BasePayload })
+class SubmitPasswordResetPayload implements BasePayload {
+  message!: string;
+}
+
 @Resolver(() => User)
 export class UserResolver {
   @Query(() => User)
@@ -127,8 +135,6 @@ export class UserResolver {
       ...userPlainObj,
       password: hashSync(userPlainObj.password, genSaltSync(8))
     });
-    console.log('newUser.password');
-    console.log(newUser.password);
     // STEP 1: save user
     await userRepo.save(newUser);
 
@@ -381,19 +387,19 @@ export class UserResolver {
     }
     user.password = hashSync(args.newPassword, genSaltSync(8));
     await userRepo.save(user);
-    return plainToClass(RequestEmailChangePayload, {
+    return plainToClass(UpdatePasswordPayload, {
       message: 'Password updated'
     });
   }
 
   @Mutation(() => ConfirmSignUpTokenPayload)
   async confirmSignUpToken(
-    @Arg('token') token: string,
+    @Args() args: ConfirmTokenArgs,
     @Ctx() ctx: AccountServiceContext
   ) {
-    const id = await ctx.tokenCache.getCache().get(token);
+    const id = await ctx.tokenCache.getCache().get(args.token);
     if (!id) {
-      throw new TokenNotFoundError(token, PendingOperation.SIGN_UP);
+      throw new TokenNotFoundError(args.token, PendingOperation.SIGN_UP);
     }
     const userRepo = ctx.em.getRepository(User);
     const user = await userRepo.findOneOrFail(id);
@@ -412,8 +418,6 @@ export class UserResolver {
     }
     user.pendingOperation = null;
 
-    console.log('user');
-    console.log(user);
     // NOTE can throw exception if error updating
     await userRepo.save(user);
     return plainToClass(ConfirmSignUpTokenPayload, {
@@ -424,13 +428,13 @@ export class UserResolver {
   @Authorized()
   @Mutation(() => ConfirmEmailResetTokenPayload)
   async confirmEmailResetToken(
-    @Arg('token') token: string,
+    @Args() args: ConfirmTokenArgs,
     @Ctx() ctx: AccountServiceContext
   ) {
     const tokenCache = ctx.tokenCache.getCache();
-    const id = await tokenCache.get(token);
+    const id = await tokenCache.get(args.token);
     if (!id) {
-      throw new TokenNotFoundError(token, PendingOperation.CHANGE_EMAIL);
+      throw new TokenNotFoundError(args.token, PendingOperation.CHANGE_EMAIL);
     }
     const userRepo = ctx.em.getRepository(User);
     const user = await userRepo.findOneOrFail(id);
@@ -439,7 +443,7 @@ export class UserResolver {
       throw new PayloadMissingError(
         user.username,
         PendingOperation.CHANGE_EMAIL,
-        token
+        args.token
       );
     }
     if (user.pendingOperation !== PendingOperation.CHANGE_EMAIL) {
@@ -468,12 +472,15 @@ export class UserResolver {
 
   @Mutation(() => ValidatePasswordResetTokenPayload)
   async validatePasswordResetToken(
-    @Arg('token') token: string,
+    @Args() args: ConfirmTokenArgs,
     @Ctx() ctx: AccountServiceContext
   ) {
-    const id = await ctx.tokenCache.getCache().get(token);
+    const id = await ctx.tokenCache.getCache().get(args.token);
     if (!id) {
-      throw new TokenNotFoundError(token, PendingOperation.FORGOT_PASSWORD);
+      throw new TokenNotFoundError(
+        args.token,
+        PendingOperation.FORGOT_PASSWORD
+      );
     }
     const userRepo = ctx.em.getRepository(User);
     const user = await userRepo.findOneOrFail(id);
@@ -485,7 +492,43 @@ export class UserResolver {
       );
     }
     return plainToClass(ValidatePasswordResetTokenPayload, {
-      message: `Password reset token "${token}" valid`
+      message: `Password reset token "${args.token}" valid`
+    });
+  }
+
+  @Mutation(() => SubmitPasswordResetPayload)
+  async submitPasswordReset(
+    @Args() args: SubmitPasswordResetArgs,
+    @Ctx() ctx: AccountServiceContext
+  ) {
+    // NOTE: copypaste, in case of extensive reuse will be extracted to function or sth
+    const id = await ctx.tokenCache.getCache().get(args.token);
+    if (!id) {
+      throw new TokenNotFoundError(
+        args.token,
+        PendingOperation.FORGOT_PASSWORD
+      );
+    }
+    const userRepo = ctx.em.getRepository(User);
+    const user = await userRepo.findOneOrFail(id);
+    if (user.pendingOperation !== PendingOperation.FORGOT_PASSWORD) {
+      throw new WrongPendingOperationError(
+        user.username,
+        PendingOperation.FORGOT_PASSWORD,
+        user.pendingOperation
+      );
+    }
+    if (!compareSync(args.password, user.password)) {
+      throw new WrongPasswordError();
+    }
+    if (compareSync(args.newPassword, user.password)) {
+      throw new UpdatedWithEqualPasswordError(user.username);
+    }
+    user.password = hashSync(args.newPassword, genSaltSync(8));
+    await userRepo.save(user);
+
+    return plainToClass(SubmitPasswordResetPayload, {
+      message: 'Password updated'
     });
   }
 }

@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsNotEmpty } from 'class-validator';
+import { IsString, IsEmail, IsNotEmpty, IsHash } from 'class-validator';
 import { ArgsType, Field } from 'type-graphql';
 import { IsIdentifierAvailable } from '../constraints/IsIdentifierAvailable';
 
@@ -7,6 +7,13 @@ export class FindUserByIdentifierArgs {
   @Field()
   @IsString()
   identifier!: string;
+}
+
+@ArgsType()
+export class ConfirmTokenArgs {
+  @Field()
+  @IsString()
+  token!: string;
 }
 
 @ArgsType()
@@ -40,6 +47,23 @@ export class ChangeAliasArgs {
 
 @ArgsType()
 export class UpdatePasswordArgs {
+  @Field()
+  @IsNotEmpty()
+  @IsString()
+  newPassword!: string;
+
+  @Field()
+  @IsString()
+  password!: string;
+}
+
+@ArgsType()
+export class SubmitPasswordResetArgs {
+  @Field()
+  @IsNotEmpty()
+  @IsString()
+  token!: string;
+
   @Field()
   @IsNotEmpty()
   @IsString()
