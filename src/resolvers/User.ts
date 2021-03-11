@@ -120,7 +120,11 @@ export class UserResolver {
     @Ctx() ctx: AccountServiceContext
   ) {
     return ctx.em.getRepository(User).findOneOrFail({
-      where: [{ username: identifier }, { email: identifier }]
+      where: [
+        { username: identifier },
+        { email: identifier },
+        { alias: identifier }
+      ]
     });
   }
 
@@ -206,7 +210,11 @@ export class UserResolver {
     @Ctx() ctx: AccountServiceContext
   ) {
     const user = await ctx.em.findOne(User, {
-      where: [{ username: input.identifier }, { email: input.identifier }]
+      where: [
+        { username: input.identifier },
+        { email: input.identifier },
+        { alias: input.identifier }
+      ]
     });
     if (!user) {
       throw new UserNotFoundError(input.identifier);
