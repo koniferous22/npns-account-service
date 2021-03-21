@@ -1,4 +1,4 @@
-import { Entity, Column, Unique } from 'typeorm';
+import { Entity, Column, Unique, OneToMany } from 'typeorm';
 import {
   Directive,
   Field,
@@ -8,6 +8,7 @@ import {
 } from 'type-graphql';
 import { BaseEntity } from './Base';
 import { AccountOwnerGuard } from '../middlewares/AccountOwnerGuard';
+import { Wallet } from './Wallet';
 
 // TODO normally would prefer union types, but not possible in type-graphql
 export enum PendingOperation {
@@ -65,4 +66,8 @@ export class User extends BaseEntity {
     default: false
   })
   hasNsfwAllowed!: boolean;
+
+  @Field(() => [Wallet])
+  @OneToMany(() => Wallet, (wallet) => wallet.user, { lazy: true })
+  wallets!: Promise<Wallet[]>;
 }

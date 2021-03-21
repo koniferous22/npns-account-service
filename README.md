@@ -14,6 +14,7 @@ Account service for npns
 * password custom validator
 * Email Forms instead of confirmation link
 * bcrypt validation decorator
+* Refactor field directive fix into custom decorator
 
 ## TO CONSIDER ??
 * Request limit on ResendSignUp

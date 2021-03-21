@@ -2,7 +2,7 @@ import { Config } from '../../config';
 
 export const signUpTemplate = (token: string) => {
   const { webAppAddress } = Config.getInstance().getConfig();
-  const fullAdress = webAppAddress + '/confirm/registration/' + token;
+  const fullAdress = webAppAddress + '/confirm/sign-up/' + token;
   return {
     subject: 'NPNS Regoostration code',
     text: 'Copy following address to confirm email:\n' + fullAdress,
@@ -13,7 +13,7 @@ export const signUpTemplate = (token: string) => {
 
 export const pwdResetTemplate = (token: string) => {
   const { webAppAddress } = Config.getInstance().getConfig();
-  const fullAdress = webAppAddress + '/confirm/passwordChange/' + token;
+  const fullAdress = webAppAddress + '/confirm/password-reset/' + token;
   return {
     subject: 'NPNS Password Reset Link',
     text: 'Copy following address to reset ur password:\n' + fullAdress,
@@ -26,14 +26,14 @@ export const pwdResetTemplate = (token: string) => {
 
 export const emailChangeTemplate = (token: string) => {
   const { webAppAddress } = Config.getInstance().getConfig();
-  const fullAdress = webAppAddress + '/confirm/emailChange/' + token;
+  const fullAdress = webAppAddress + '/confirm/change-email/' + token;
   return {
     subject: 'NPNS Email Change Link',
     text: 'Copy following address to confirm email:\n' + fullAdress,
     html:
       '<p>Click <a href="' +
       fullAdress +
-      '">here</a> to confirm your newly chosen email adventurer</p>'
+      '">here</a> to confirm your updated email</p>'
   } as const;
 };
 

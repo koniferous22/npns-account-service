@@ -1,9 +1,27 @@
 import { PendingOperation } from '../entities/User';
 import templates from '../external/nodemailer/templates';
 
+export class InvalidValueError extends Error {
+  name = 'InvalidValueError';
+  constructor(public expected: string, public actual: string) {
+    super(`Expected value: "${expected}", actual "${actual}"`);
+  }
+}
+
+export class SchemaFixParseError extends Error {
+  name = '';
+  constructor(message?: string) {
+    super(
+      `Error during GQL schema parsing for fixing field directives${
+        message ? `: ${message}` : ''
+      }`
+    );
+  }
+}
+
 export class UserNotFoundError extends Error {
   name = 'UserNotFoundError';
-  constructor(public identifier: string) {
+  constructor(public identifier?: string) {
     super(`User with email/username: "${identifier}" not found`);
   }
 }

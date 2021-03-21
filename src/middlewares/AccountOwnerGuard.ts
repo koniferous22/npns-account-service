@@ -1,19 +1,32 @@
 import { MiddlewareFn, UnauthorizedError } from 'type-graphql';
 import { AccountServiceContext } from '../context';
 import { User } from '../entities/User';
-import { AccountOwnerAccessError } from '../utils/exceptions';
+import { Wallet } from '../entities/Wallet';
+import {
+  AccountOwnerAccessError,
+  UserNotFoundError
+} from '../utils/exceptions';
 
 export const AccountOwnerGuard: MiddlewareFn<AccountServiceContext> = async (
   { root, context, info },
   next
 ) => {
+  if (!context.user) {
+    throw new UnauthorizedError();
+  }
+  let user: User | null = null;
   if (root instanceof User) {
-    if (!context.user) {
-      throw new UnauthorizedError();
-    }
-    if (context.user.data.id !== root.id) {
-      throw new AccountOwnerAccessError(info.path.key.toString());
-    }
+    user = root;
+  }
+  if (root instanceof Wallet) {
+    user = await root.user;
+  }
+  if (!user) {
+    // NOTE should only happen in bad application of middleware
+    throw new UserNotFoundError();
+  }
+  if (context.user.data.id !== user.id) {
+    throw new AccountOwnerAccessError(info.path.key.toString());
   }
   return next();
 };
