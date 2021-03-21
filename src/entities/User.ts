@@ -9,12 +9,13 @@ import {
 import { BaseEntity } from './Base';
 import { AccountOwnerGuard } from '../middlewares/AccountOwnerGuard';
 import { Wallet } from './Wallet';
+import { Activity } from './Activity';
 
 // TODO normally would prefer union types, but not possible in type-graphql
 export enum PendingOperation {
-  SIGN_UP,
-  FORGOT_PASSWORD,
-  CHANGE_EMAIL
+  SIGN_UP = 0,
+  FORGOT_PASSWORD = 1,
+  CHANGE_EMAIL = 2
 }
 
 registerEnumType(PendingOperation, {
@@ -70,4 +71,8 @@ export class User extends BaseEntity {
   @Field(() => [Wallet])
   @OneToMany(() => Wallet, (wallet) => wallet.user, { lazy: true })
   wallets!: Promise<Wallet[]>;
+
+  @Field(() => [Activity])
+  @OneToMany(() => Activity, (wallet) => wallet.user, { lazy: true })
+  activity!: Promise<Activity[]>;
 }

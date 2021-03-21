@@ -2,10 +2,10 @@
 Account service for npns
 
 ## Generating migrations
-* `npm run orm -- migration:generate -c <<CONNECTION>> -n <<MIGRATION_NAME>>`
+* `npm run orm -- migration:generate -n <<MIGRATION_NAME>>`
   * `<<MIGRATION_NAME>>: string`
 * Executing in docker compose:
-* `docker-compose exec -- gateway npm run orm -- migration:generate -n <<MIGRATION_NAME>>`
+* `docker-compose exec -- account_service npm run orm -- migration:generate -n <<MIGRATION_NAME>>`
 
 ## TODO
 * verification token cache certificates 
@@ -14,9 +14,10 @@ Account service for npns
 * password custom validator
 * Email Forms instead of confirmation link
 * bcrypt validation decorator
-* Refactor field directive fix into custom decorator
+* Pagination/Cursor on User -> Activities & Wallet -> Transaction
 
 ## TO CONSIDER ??
 * Request limit on ResendSignUp
 * schema directives on some fields with special behaviour
   * for example AccountOwnerGuard
+* Which wallet/transaction data can be public

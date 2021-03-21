@@ -1,5 +1,7 @@
 import { MiddlewareFn, UnauthorizedError } from 'type-graphql';
 import { AccountServiceContext } from '../context';
+import { Activity } from '../entities/Activity';
+import { Transaction } from '../entities/Transaction';
 import { User } from '../entities/User';
 import { Wallet } from '../entities/Wallet';
 import {
@@ -18,8 +20,12 @@ export const AccountOwnerGuard: MiddlewareFn<AccountServiceContext> = async (
   if (root instanceof User) {
     user = root;
   }
-  if (root instanceof Wallet) {
+  if (root instanceof Wallet || root instanceof Activity) {
     user = await root.user;
+  }
+  if (root instanceof Transaction) {
+    const wallet = await root.wallet;
+    user = await wallet.user;
   }
   if (!user) {
     // NOTE should only happen in bad application of middleware
