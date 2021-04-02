@@ -5,7 +5,7 @@ FROM node:$IMAGE_TAG_ACCOUNT_SERVICE_ALPINE AS base_node_alpine
 RUN echo "Building tag service with NODE_ENV=\"${NODE_ENV}\""
 
 WORKDIR /usr/src/account-service
-COPY package.json .
+COPY package.json package-lock.json ./
 RUN npm install
 
 # VERSION 1 of the image: npm start:dev
@@ -25,4 +25,4 @@ FROM npns_${NODE_ENV} AS npns_img_final
 EXPOSE 4000
 # Workaround for injecting starting command via env
 # Wait for databases here
-CMD  ["sh", "-c", "npm run ${ACCOUNT_SERVICE_START_COMMAND}"]
+CMD  npm run ${ACCOUNT_SERVICE_START_COMMAND}

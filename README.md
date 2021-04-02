@@ -21,3 +21,4 @@ Account service for npns
 * schema directives on some fields with special behaviour
   * for example AccountOwnerGuard
 * Which wallet/transaction data can be public
+* Optimize dockerfile build context
