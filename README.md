@@ -22,3 +22,4 @@ Account service for npns
   * for example AccountOwnerGuard
 * Which wallet/transaction data can be public
 * Optimize dockerfile build context
+* Migrate to prisma when it makes sense

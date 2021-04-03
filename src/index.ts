@@ -48,14 +48,16 @@ const bootstrap = async () => {
       __resolveReference: resolveUserReference
     }
   });
+  const nodemailer = new Nodemailer();
+  const tokenCache = new TokenCacheService();
   const server = new ApolloServer({
     schema,
     context: ({ req }) => {
       const userFromRequest = req.headers.user as string;
       return {
         em: connection.createEntityManager(),
-        nodemailer: new Nodemailer(),
-        tokenCache: new TokenCacheService(),
+        nodemailer,
+        tokenCache,
         user: userFromRequest ? JSON.parse(userFromRequest) : null,
         config: Config.getInstance()
       } as AccountServiceContext;

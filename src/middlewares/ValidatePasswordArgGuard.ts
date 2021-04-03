@@ -12,7 +12,7 @@ export const ValidatePasswordArgGuard: MiddlewareFn<AccountServiceContext> = asy
     throw new UnauthorizedError();
   }
   if (!args.password) {
-    throw new Error(`Argumment password is missing`);
+    throw new WrongPasswordError(true);
   }
   const userFromDb = await context.em
     .getRepository(User)

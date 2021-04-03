@@ -9,12 +9,21 @@ export class InvalidValueError extends Error {
 }
 
 export class SchemaFixParseError extends Error {
-  name = '';
+  name = 'SchemaFixParseError';
   constructor(message?: string) {
     super(
       `Error during GQL schema parsing for fixing field directives${
         message ? `: ${message}` : ''
       }`
+    );
+  }
+}
+
+export class ConfigValidationError extends Error {
+  name = 'ConfigValidationError';
+  constructor(configPath: string, expectedValue: string, actual: string) {
+    super(
+      `Invalid config value for "${configPath}" - expected ${expectedValue}, got "${actual}"`
     );
   }
 }
@@ -28,8 +37,12 @@ export class UserNotFoundError extends Error {
 
 export class WrongPasswordError extends Error {
   name = 'WrongPasswordError';
-  constructor() {
-    super('Attempted login with wrong password');
+  constructor(isPasswordMissing = false) {
+    super(
+      isPasswordMissing
+        ? 'Argumment password is missing'
+        : 'Attempted login with wrong password'
+    );
   }
 }
 
@@ -96,10 +109,17 @@ export class AccountOwnerAccessError extends Error {
   }
 }
 
-export class ConfigError extends Error {
-  name = 'ConfigError';
+export class ComposedConfigError extends Error {
+  name = 'ComposedConfigError';
   constructor(public errors: string[]) {
     super(errors.join('\n'));
+  }
+}
+
+export class ConfigError extends Error {
+  name = 'ConfigError';
+  constructor(public message: string) {
+    super(message);
   }
 }
 
