@@ -4,9 +4,7 @@ import {
   Arg,
   Resolver,
   Ctx,
-  Field,
   Mutation,
-  ObjectType,
   Args,
   Authorized,
   UseMiddleware
@@ -29,7 +27,6 @@ import {
   WrongPasswordError,
   WrongPendingOperationError
 } from '../utils/exceptions';
-import { BasePayload } from './BasePayload';
 import { ValidatePasswordArgGuard } from '../middlewares/ValidatePasswordArgGuard';
 import {
   FindUserByIdentifierArgs,
@@ -40,73 +37,19 @@ import {
   ConfirmTokenArgs,
   ValidateIdentifiersAvailableArgs
 } from '../utils/args';
-
-@ObjectType({ implements: BasePayload })
-class SignUpUserPayload implements BasePayload {
-  message!: string;
-  @Field(() => User)
-  createdUser!: User;
-}
-
-@ObjectType({ implements: BasePayload })
-class ResendSignUpTokenPaylod implements BasePayload {
-  message!: string;
-}
-
-@ObjectType({ implements: BasePayload })
-class SignInUserPayload implements BasePayload {
-  message!: string;
-  @Field()
-  token!: string;
-  @Field(() => User)
-  user!: User;
-}
-
-@ObjectType({ implements: BasePayload })
-class ForgotPasswordPayload implements BasePayload {
-  message!: string;
-}
-
-@ObjectType({ implements: BasePayload })
-class RequestEmailChangePayload implements BasePayload {
-  message!: string;
-}
-
-@ObjectType({ implements: BasePayload })
-class ChangeAliasPayload implements BasePayload {
-  message!: string;
-
-  @Field(() => User)
-  updatedUser!: User;
-}
-
-@ObjectType({ implements: BasePayload })
-class UpdatePasswordPayload implements BasePayload {
-  message!: string;
-}
-
-@ObjectType({ implements: BasePayload })
-class ConfirmSignUpTokenPayload implements BasePayload {
-  message!: string;
-}
-
-@ObjectType({ implements: BasePayload })
-class ConfirmEmailResetTokenPayload implements BasePayload {
-  message!: string;
-
-  @Field(() => User)
-  updatedUser!: User;
-}
-
-@ObjectType({ implements: BasePayload })
-class ValidatePasswordResetTokenPayload implements BasePayload {
-  message!: string;
-}
-
-@ObjectType({ implements: BasePayload })
-class SubmitPasswordResetPayload implements BasePayload {
-  message!: string;
-}
+import {
+  SignUpUserPayload,
+  ResendSignUpTokenPaylod,
+  SignInUserPayload,
+  ForgotPasswordPayload,
+  ChangeAliasPayload,
+  RequestEmailChangePayload,
+  UpdatePasswordPayload,
+  ConfirmSignUpTokenPayload,
+  ConfirmEmailResetTokenPayload,
+  ValidatePasswordResetTokenPayload,
+  SubmitPasswordResetPayload
+} from '../utils/payloads';
 
 @Resolver(() => User)
 export class UserResolver {
