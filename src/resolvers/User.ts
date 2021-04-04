@@ -13,7 +13,7 @@ import jwt from 'jsonwebtoken';
 import { hashSync, genSaltSync, compareSync } from 'bcrypt';
 import { AccountServiceContext } from '../context';
 import { PendingOperation, User } from '../entities/User';
-import { SignInUserContract, SignUpUserContract } from '../utils/inputTypes';
+import { SignInUserContract, SignUpUserContract } from '../utils/inputs';
 import {
   CacheCleanupError,
   CacheCreateTokenError,
