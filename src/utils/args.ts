@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsNotEmpty, IsHash } from 'class-validator';
+import { IsString, IsEmail, IsNotEmpty } from 'class-validator';
 import { ArgsType, Field } from 'type-graphql';
 import { IsIdentifierAvailable } from '../constraints/IsIdentifierAvailable';
 
