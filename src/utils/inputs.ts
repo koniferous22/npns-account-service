@@ -5,8 +5,9 @@ import {
   IsAlphanumeric,
   IsNotEmpty
 } from 'class-validator';
-import { InputType, Field } from 'type-graphql';
+import { InputType, Field, ID } from 'type-graphql';
 import { IsIdentifierAvailable } from '../constraints/IsIdentifierAvailable';
+import { WalletType } from '../entities/Wallet';
 
 const MIN_PASSWORD_LENGTH = 5;
 
@@ -48,4 +49,13 @@ export class SignUpUserContract {
     message: `Password should be at least ${MIN_PASSWORD_LENGTH} characters long`
   })
   password!: string;
+}
+
+@InputType()
+export class MwpAccount_CreateWalletInput {
+  @Field(() => ID)
+  tagId!: string;
+
+  @Field()
+  walletType!: WalletType;
 }

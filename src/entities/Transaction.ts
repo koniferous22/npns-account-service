@@ -3,10 +3,12 @@ import { Entity, ManyToOne, Column } from 'typeorm';
 import { BaseEntity } from './Base';
 import { Wallet } from './Wallet';
 
+// ! Enum keys have to stay UpperCamelCase otherwise it will generate different values (complicated because renaming with graphql-codegen/type-graphql plugin doesn't work)
+// ! If different values per enum are generated across federation, valid schema won't be composed
 export enum TransactionType {
-  CHALLENGE_BOOST = 0,
-  VIRTUAL_REWARD = 1,
-  MONETARY_REWARD = 2
+  ChallengeBoost = 0,
+  VirtualReward = 1,
+  MonetaryReward = 2
 }
 
 registerEnumType(TransactionType, {

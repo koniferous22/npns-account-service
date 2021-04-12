@@ -1,12 +1,12 @@
 import { Directive, Field, ObjectType, registerEnumType } from 'type-graphql';
-import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
+import { Column, Entity, ManyToOne, OneToMany, Unique } from 'typeorm';
 import { BaseEntity } from './Base';
 import { Transaction } from './Transaction';
 import { User } from './User';
 
 export enum WalletType {
-  MONETARY = 0,
-  VIRTUAL = 1
+  Monetary = 0,
+  Virtual = 1
 }
 
 registerEnumType(WalletType, {
@@ -16,6 +16,7 @@ registerEnumType(WalletType, {
 
 @Directive(`@key(fields: "id")`)
 @ObjectType()
+@Unique(['tagId', 'walletType'])
 @Entity()
 export class Wallet extends BaseEntity {
   @Field(() => User)
@@ -23,7 +24,7 @@ export class Wallet extends BaseEntity {
     lazy: true,
     nullable: false
   })
-  user!: Promise<User>;
+  user!: User | Promise<User>;
 
   @Field(() => WalletType)
   @Column({
@@ -33,7 +34,9 @@ export class Wallet extends BaseEntity {
   walletType!: WalletType;
 
   @Field()
-  @Column()
+  @Column({
+    default: 0
+  })
   balance!: number;
 
   @Field(() => [Transaction])
@@ -41,4 +44,9 @@ export class Wallet extends BaseEntity {
     lazy: true
   })
   transactions!: Promise<Transaction[]>;
+
+  @Column({
+    type: 'uuid'
+  })
+  tagId!: string;
 }

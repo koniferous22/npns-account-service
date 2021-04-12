@@ -53,7 +53,9 @@ export class User extends BaseEntity {
   password!: string;
 
   @UseMiddleware(AccountOwnerGuard)
-  @Field(() => PendingOperation)
+  @Field(() => PendingOperation, {
+    nullable: true
+  })
   @Column({
     type: 'enum',
     enum: PendingOperation,

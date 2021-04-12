@@ -1,5 +1,7 @@
 import { InterfaceType, Field, ObjectType } from 'type-graphql';
+import { Transaction } from '../entities/Transaction';
 import { User } from '../entities/User';
+import { Wallet } from '../entities/Wallet';
 
 @InterfaceType()
 export abstract class BasePayload {
@@ -72,4 +74,24 @@ export class ValidatePasswordResetTokenPayload implements BasePayload {
 @ObjectType({ implements: BasePayload })
 export class SubmitPasswordResetPayload implements BasePayload {
   message!: string;
+}
+
+@ObjectType({ implements: BasePayload })
+export class MwpAccount_CreateWalletPayload implements BasePayload {
+  message!: string;
+
+  @Field(() => Wallet)
+  createdWallet!: Wallet;
+}
+
+export class MwpAccount_CreateWalletRollbackPayload implements BasePayload {
+  message!: string;
+}
+
+@ObjectType({ implements: BasePayload })
+export class MwpAccount_CreateTranscationPayload implements BasePayload {
+  message!: string;
+
+  @Field(() => Transaction)
+  transaction!: Transaction;
 }

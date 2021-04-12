@@ -21,10 +21,30 @@ export class SchemaFixParseError extends Error {
 
 export class ConfigValidationError extends Error {
   name = 'ConfigValidationError';
-  constructor(configPath: string, expectedValue: string, actual: string) {
+  constructor(
+    public configPath: string,
+    public expectedValue: string,
+    public actual: string
+  ) {
     super(
       `Invalid config value for "${configPath}" - expected ${expectedValue}, got "${actual}"`
     );
+  }
+}
+
+export class InvalidDigestError extends Error {
+  name = 'InvalidDigestError';
+  constructor(public args: unknown, public digest: string) {
+    super(
+      `Received invalid digest "${digest}" for args ${JSON.stringify(args)}`
+    );
+  }
+}
+
+export class MissingDigestError extends Error {
+  name = 'MissingDigestError';
+  constructor(public args: unknown) {
+    super(`Missing digest for args ${JSON.stringify(args)}`);
   }
 }
 
@@ -37,7 +57,7 @@ export class UserNotFoundError extends Error {
 
 export class WrongPasswordError extends Error {
   name = 'WrongPasswordError';
-  constructor(isPasswordMissing = false) {
+  constructor(public isPasswordMissing = false) {
     super(
       isPasswordMissing
         ? 'Argumment password is missing'

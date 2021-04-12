@@ -3,13 +3,15 @@ import { Column, Entity, ManyToOne } from 'typeorm';
 import { BaseEntity } from './Base';
 import { User } from './User';
 
+// ! Enum keys have to stay UpperCamelCase otherwise it will generate different values (complicated because renaming with graphql-codegen/type-graphql plugin doesn't work)
+// ! If different values per enum are generated across federation, valid schema won't be composed
 export enum ActivityType {
-  POST_CHALLENGE = 0,
-  POST_SUBMISSION = 1,
-  POST_REPLY = 2,
-  EDIT_CHALLENGE = 3,
-  EDIT_SUBMISSION = 4,
-  EDIT_REPLY = 5
+  PostChallenge = 0,
+  PostSubmission = 1,
+  PostReply = 2,
+  EditChallenge = 3,
+  EditSubmission = 4,
+  EditReply = 5
 }
 
 registerEnumType(ActivityType, {
