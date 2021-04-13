@@ -26,7 +26,7 @@ export class Transaction extends BaseEntity {
     lazy: true,
     nullable: false
   })
-  wallet!: Promise<Wallet>;
+  wallet!: Wallet | Promise<Wallet>;
 
   @Field(() => TransactionType)
   @Column({

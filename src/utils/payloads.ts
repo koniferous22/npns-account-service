@@ -89,9 +89,14 @@ export class MwpAccount_CreateWalletRollbackPayload implements BasePayload {
 }
 
 @ObjectType({ implements: BasePayload })
-export class MwpAccount_CreateTranscationPayload implements BasePayload {
+export class MwpAccount_CreateTransactionPayload implements BasePayload {
   message!: string;
 
   @Field(() => Transaction)
-  transaction!: Transaction;
+  createdTransaction!: Transaction;
+}
+
+export class MwpAccount_CreateTransactionRollbackPayload
+  implements BasePayload {
+  message!: string;
 }

@@ -45,8 +45,6 @@ export class WalletResolver {
       .getRepository(User)
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       .findOneOrFail(ctx.user!.data.id);
-    console.log(`user`);
-    console.log(user);
     const walletRepo = ctx.em.getRepository(Wallet);
     const createdWallet = walletRepo.create({
       ...payload,

@@ -23,6 +23,7 @@ Account service for npns
 * Which wallet/transaction data can be public
 * Optimize dockerfile build context
 * Migrate to prisma when it makes sense
+* SHOULD Wallet be challenge owner (in other words, should activity be related to wallet, or User)
 
 ## Possible features
 * Boost from existing wallet balance

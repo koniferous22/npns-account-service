@@ -7,6 +7,7 @@ import {
 } from 'class-validator';
 import { InputType, Field, ID } from 'type-graphql';
 import { IsIdentifierAvailable } from '../constraints/IsIdentifierAvailable';
+import { TransactionType } from '../entities/Transaction';
 import { WalletType } from '../entities/Wallet';
 
 const MIN_PASSWORD_LENGTH = 5;
@@ -58,4 +59,16 @@ export class MwpAccount_CreateWalletInput {
 
   @Field()
   walletType!: WalletType;
+}
+
+@InputType()
+export class MwpAccount_CreateTransactionInput {
+  @Field(() => ID)
+  walletId!: string;
+
+  @Field()
+  transactionType!: TransactionType;
+
+  @Field()
+  amount!: number;
 }
