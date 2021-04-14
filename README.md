@@ -15,6 +15,7 @@ Account service for npns
 * Email Forms instead of confirmation link
 * bcrypt validation decorator
 * Pagination/Cursor on User -> Activities & Wallet -> Transaction
+* Find better workaround for reference resolving
 
 ## TO CONSIDER ??
 * Request limit on ResendSignUp

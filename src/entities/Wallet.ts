@@ -39,7 +39,6 @@ export class Wallet extends BaseEntity {
   })
   balance!: number;
 
-  @Field(() => [Transaction])
   @OneToMany(() => Transaction, (transaction) => transaction.wallet, {
     lazy: true
   })

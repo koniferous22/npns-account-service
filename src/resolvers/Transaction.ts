@@ -13,10 +13,10 @@ import { AccountServiceContext } from '../context';
 import { Transaction, TransactionType } from '../entities/Transaction';
 import { Wallet } from '../entities/Wallet';
 import { MultiWriteProxyHmacGuard } from '../middlewares/MultiWriteProxyHmacGuard';
-import { MwpAccount_CreateTransactionInput } from '../utils/inputs';
+import { MwpAccount_CreateBoostTransactionInput } from '../utils/inputs';
 import {
-  MwpAccount_CreateTransactionPayload,
-  MwpAccount_CreateTransactionRollbackPayload
+  MwpAccount_CreateBoostTransactionPayload,
+  MwpAccount_CreateBoostTransactionRollbackPayload
 } from '../utils/payloads';
 
 @Resolver(() => Transaction)
@@ -24,11 +24,11 @@ export class TransactionResolver {
   @Directive('@MwpTransaction')
   @UseMiddleware(MultiWriteProxyHmacGuard)
   @Authorized()
-  @Mutation(() => MwpAccount_CreateTransactionPayload, {
-    name: 'mwpAccount_CreateTransaction'
+  @Mutation(() => MwpAccount_CreateBoostTransactionPayload, {
+    name: 'mwpAccount_CreateBoostTransaction'
   })
-  async createWallet(
-    @Arg('payload') payload: MwpAccount_CreateTransactionInput,
+  async createBoostTransaction(
+    @Arg('payload') payload: MwpAccount_CreateBoostTransactionInput,
     @Arg('digest') digest: string,
     @Ctx() ctx: AccountServiceContext
   ) {
@@ -38,12 +38,12 @@ export class TransactionResolver {
       .findOneOrFail(payload.walletId);
     const transactionRepo = ctx.em.getRepository(Transaction);
     const createdTransaction = transactionRepo.create({
-      transactionType: payload.transactionType,
+      transactionType: TransactionType.ChallengeBoost,
       amount: payload.amount,
       wallet
     });
     await transactionRepo.save(createdTransaction);
-    return plainToClass(MwpAccount_CreateTransactionPayload, {
+    return plainToClass(MwpAccount_CreateBoostTransactionPayload, {
       createdTransaction: createdTransaction,
       message: `Transaction "${createdTransaction.id}" created`
     });
@@ -51,10 +51,10 @@ export class TransactionResolver {
   @Directive('@MwpRollback')
   @UseMiddleware(MultiWriteProxyHmacGuard)
   @Authorized()
-  @Mutation(() => MwpAccount_CreateTransactionPayload, {
-    name: 'mwpAccount_CreateTransactionRollback'
+  @Mutation(() => MwpAccount_CreateBoostTransactionPayload, {
+    name: 'mwpAccount_CreateBoostTransactionRollback'
   })
-  async createWalletRollback(
+  async createBoostTransactionRollback(
     @Arg('payload', () => ID) payload: string,
     @Arg('digest') digest: string,
     @Ctx() ctx: AccountServiceContext
@@ -64,10 +64,12 @@ export class TransactionResolver {
       .findOneOrFail({ id: payload });
     const wallet = await transactionToDelete.wallet;
     await ctx.em.getRepository(Transaction).delete({ id: payload });
-    return plainToClass(MwpAccount_CreateTransactionRollbackPayload, {
+    return plainToClass(MwpAccount_CreateBoostTransactionRollbackPayload, {
       message: `Transaction id: "${transactionToDelete.id}", type: ${
         TransactionType[transactionToDelete.transactionType]
-      }, amount: ${transactionToDelete.amount}, walletId: "${wallet.id}"`
+      }, amount: ${transactionToDelete.amount}, walletId: "${
+        wallet.id
+      }" deleted`
     });
   }
 }

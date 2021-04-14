@@ -1,5 +1,5 @@
 import { Directive, Field, ObjectType, registerEnumType } from 'type-graphql';
-import { Column, Entity, ManyToOne } from 'typeorm';
+import { Column, Entity, Index, ManyToOne } from 'typeorm';
 import { BaseEntity } from './Base';
 import { User } from './User';
 
@@ -23,6 +23,7 @@ registerEnumType(ActivityType, {
 @ObjectType()
 @Entity()
 export class Activity extends BaseEntity {
+  @Index()
   @Field(() => User)
   @ManyToOne(() => User, {
     lazy: true,

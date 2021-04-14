@@ -1,5 +1,5 @@
 import { Directive, ObjectType, Field, registerEnumType } from 'type-graphql';
-import { Entity, ManyToOne, Column } from 'typeorm';
+import { Entity, ManyToOne, Column, Index } from 'typeorm';
 import { BaseEntity } from './Base';
 import { Wallet } from './Wallet';
 
@@ -21,6 +21,7 @@ registerEnumType(TransactionType, {
 @ObjectType()
 @Entity()
 export class Transaction extends BaseEntity {
+  @Index()
   @Field(() => Wallet)
   @ManyToOne(() => Wallet, {
     lazy: true,

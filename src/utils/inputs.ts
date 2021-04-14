@@ -7,6 +7,7 @@ import {
 } from 'class-validator';
 import { InputType, Field, ID } from 'type-graphql';
 import { IsIdentifierAvailable } from '../constraints/IsIdentifierAvailable';
+import { ActivityType } from '../entities/Activity';
 import { TransactionType } from '../entities/Transaction';
 import { WalletType } from '../entities/Wallet';
 
@@ -62,13 +63,29 @@ export class MwpAccount_CreateWalletInput {
 }
 
 @InputType()
-export class MwpAccount_CreateTransactionInput {
+export class MwpAccount_CreateBoostTransactionInput {
   @Field(() => ID)
   walletId!: string;
 
   @Field()
-  transactionType!: TransactionType;
+  amount!: number;
+}
+
+@InputType()
+export class MwpAccount_AddBalanceInput {
+  @Field(() => ID)
+  walletId!: string;
 
   @Field()
   amount!: number;
+}
+
+@InputType()
+export class MwpAccount_AddActivityInput {
+  @Field(() => ActivityType)
+  activityType!: ActivityType;
+
+  // NOTE unused field: just used for purposes of not using single enum value: that could be misused to compute HMAC secret
+  @Field()
+  postId!: string;
 }

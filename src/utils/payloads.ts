@@ -1,4 +1,5 @@
 import { InterfaceType, Field, ObjectType } from 'type-graphql';
+import { Activity } from '../entities/Activity';
 import { Transaction } from '../entities/Transaction';
 import { User } from '../entities/User';
 import { Wallet } from '../entities/Wallet';
@@ -84,19 +85,50 @@ export class MwpAccount_CreateWalletPayload implements BasePayload {
   createdWallet!: Wallet;
 }
 
+@ObjectType({ implements: BasePayload })
 export class MwpAccount_CreateWalletRollbackPayload implements BasePayload {
   message!: string;
 }
 
 @ObjectType({ implements: BasePayload })
-export class MwpAccount_CreateTransactionPayload implements BasePayload {
+export class MwpAccount_CreateBoostTransactionPayload implements BasePayload {
   message!: string;
 
   @Field(() => Transaction)
   createdTransaction!: Transaction;
 }
 
-export class MwpAccount_CreateTransactionRollbackPayload
+@ObjectType({ implements: BasePayload })
+export class MwpAccount_CreateBoostTransactionRollbackPayload
   implements BasePayload {
+  message!: string;
+}
+
+@ObjectType({ implements: BasePayload })
+export class MwpAccount_AddBalancePayload implements BasePayload {
+  message!: string;
+
+  @Field(() => Wallet)
+  wallet!: Wallet;
+
+  @Field(() => Transaction)
+  transaction!: Transaction;
+}
+
+@ObjectType({ implements: BasePayload })
+export class MwpAccount_AddBalanceRollbackPayload implements BasePayload {
+  message!: string;
+}
+
+@ObjectType({ implements: BasePayload })
+export class MwpAccount_AddActivityPayload implements BasePayload {
+  message!: string;
+
+  @Field(() => Activity)
+  createdActivity!: Activity;
+}
+
+@ObjectType({ implements: BasePayload })
+export class MwpAccount_AddActivityRollbackPayload implements BasePayload {
   message!: string;
 }

@@ -1,10 +1,7 @@
-import { AccountServiceContext } from '../context';
+import { getManager } from 'typeorm';
 import { User } from '../entities/User';
 
-export const resolveUserReference = (
-  user: Pick<User, 'id'>,
-  args: any,
-  ctx: AccountServiceContext
-) => {
-  return ctx.em.getRepository(User).findOneOrFail({ id: user.id });
+// NOTE this resolver doesn't work for some reason without context injecting, so getManager() call is a workaround
+export const resolveUserReference = (user: Pick<User, 'id'>) => {
+  return getManager().getRepository(User).findOneOrFail({ id: user.id });
 };

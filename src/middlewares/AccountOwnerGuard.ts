@@ -32,7 +32,10 @@ export const AccountOwnerGuard: MiddlewareFn<AccountServiceContext> = async (
     throw new UserNotFoundError();
   }
   if (context.user.data.id !== user.id) {
-    throw new AccountOwnerAccessError(info.path.key.toString());
+    throw new AccountOwnerAccessError(
+      info.path.key.toString(),
+      context.user.data.id
+    );
   }
   return next();
 };

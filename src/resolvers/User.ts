@@ -7,7 +7,8 @@ import {
   Mutation,
   Args,
   Authorized,
-  UseMiddleware
+  UseMiddleware,
+  FieldResolver
 } from 'type-graphql';
 import jwt from 'jsonwebtoken';
 import { hashSync, genSaltSync, compareSync } from 'bcrypt';
@@ -50,9 +51,36 @@ import {
   ValidatePasswordResetTokenPayload,
   SubmitPasswordResetPayload
 } from '../utils/payloads';
+import {
+  ActivityByUserIdInput,
+  ActivityConnection
+} from '../entities/ActivityConnection';
+import { AccountOwnerGuard } from '../middlewares/AccountOwnerGuard';
+import {
+  TransactionByWalletIdsInput,
+  TransactionConnection
+} from '../entities/TransactionConnection';
 
 @Resolver(() => User)
 export class UserResolver {
+  @FieldResolver(() => ActivityConnection)
+  activities(
+    @Arg('input') input: ActivityByUserIdInput,
+    @Ctx() ctx: AccountServiceContext
+  ) {
+    return ActivityConnection.activityConnection(input, ctx);
+  }
+
+  @Authorized()
+  @UseMiddleware(AccountOwnerGuard)
+  @FieldResolver(() => TransactionConnection)
+  transactions(
+    @Arg('input') input: TransactionByWalletIdsInput,
+    @Ctx() ctx: AccountServiceContext
+  ) {
+    return TransactionConnection.transactionConnection(input, ctx);
+  }
+
   @Query(() => User)
   userById(@Arg('id') id: string, @Ctx() ctx: AccountServiceContext) {
     return ctx.em.getRepository(User).findOneOrFail({ id });

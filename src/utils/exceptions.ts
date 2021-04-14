@@ -122,9 +122,9 @@ export class PendingProfileOperationInProgressError extends Error {
 
 export class AccountOwnerAccessError extends Error {
   name = 'AccountOwnerAccessError';
-  constructor(public field: string) {
+  constructor(public field: string, public userId?: string) {
     super(
-      `Attempting to access "${field}" which can be accessed only by account owner`
+      `Attempting to access "${field}" which can be accessed only by account owner (user: "${userId}")`
     );
   }
 }
@@ -181,6 +181,23 @@ export class WrongPendingOperationError extends Error {
   ) {
     super(
       `Expected operation "${expectedOperationType}" for user "${identifier}", got "${actualOperationType}"`
+    );
+  }
+}
+
+export class NegativeWalletBalanceError extends Error {
+  name = 'NegativeWalletBalanceError';
+  constructor(
+    public walletId: string,
+    public balance: number,
+    public removedTransaction?: string
+  ) {
+    super(
+      `Wallet "${walletId}" reached negative balance "${balance}"${
+        removedTransaction
+          ? ` after transaction deletion attempt "${removedTransaction}"`
+          : ''
+      }`
     );
   }
 }

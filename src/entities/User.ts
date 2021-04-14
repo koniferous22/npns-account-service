@@ -70,11 +70,11 @@ export class User extends BaseEntity {
   })
   hasNsfwAllowed!: boolean;
 
+  // TODO We assume relatively small amount of topics
   @Field(() => [Wallet])
   @OneToMany(() => Wallet, (wallet) => wallet.user, { lazy: true })
   wallets!: Promise<Wallet[]>;
 
-  @Field(() => [Activity])
   @OneToMany(() => Activity, (wallet) => wallet.user, { lazy: true })
   activity!: Promise<Activity[]>;
 }
