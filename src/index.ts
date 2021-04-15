@@ -18,6 +18,8 @@ import { TokenCacheService } from './external/token-cache';
 import { resolveUserReference } from './references/User';
 import { fixFieldSchemaDirectives } from './utils/fixFieldDirectives';
 import { WalletResolver } from './resolvers/Wallet';
+import { ActivityResolver } from './resolvers/Activity';
+import { TransactionResolver } from './resolvers/Transaction';
 
 const federationFieldDirectivesFixes: Parameters<
   typeof fixFieldSchemaDirectives
@@ -27,7 +29,12 @@ const bootstrap = async () => {
   const { port, graphqlPath } = Config.getInstance().getConfig();
   const connection = await createConnection();
   const typeGraphQLSchema = await buildSchema({
-    resolvers: [UserResolver, WalletResolver],
+    resolvers: [
+      UserResolver,
+      WalletResolver,
+      ActivityResolver,
+      TransactionResolver
+    ],
     directives: [...specifiedDirectives, ...federationDirectives],
     authChecker
   });

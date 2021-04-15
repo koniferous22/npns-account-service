@@ -8,7 +8,6 @@ import {
 import { InputType, Field, ID } from 'type-graphql';
 import { IsIdentifierAvailable } from '../constraints/IsIdentifierAvailable';
 import { ActivityType } from '../entities/Activity';
-import { TransactionType } from '../entities/Transaction';
 import { WalletType } from '../entities/Wallet';
 
 const MIN_PASSWORD_LENGTH = 5;

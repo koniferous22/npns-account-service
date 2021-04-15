@@ -11,7 +11,6 @@ import {
 } from 'type-graphql';
 import { AccountServiceContext } from '../context';
 import { Activity, ActivityType } from '../entities/Activity';
-import { Transaction } from '../entities/Transaction';
 import { MultiWriteProxyHmacGuard } from '../middlewares/MultiWriteProxyHmacGuard';
 import { MwpAccount_AddActivityInput } from '../utils/inputs';
 import {
@@ -19,8 +18,8 @@ import {
   MwpAccount_AddActivityRollbackPayload
 } from '../utils/payloads';
 
-@Resolver(() => Transaction)
-export class TransactionResolver {
+@Resolver(() => Activity)
+export class ActivityResolver {
   @Directive('@MwpTransaction')
   @UseMiddleware(MultiWriteProxyHmacGuard)
   @Authorized()
@@ -45,7 +44,7 @@ export class TransactionResolver {
   @Directive('@MwpRollback')
   @UseMiddleware(MultiWriteProxyHmacGuard)
   @Authorized()
-  @Mutation(() => MwpAccount_AddActivityPayload, {
+  @Mutation(() => MwpAccount_AddActivityRollbackPayload, {
     name: 'mwpAccount_AddActivityRollback'
   })
   async AddActivityRollback(
@@ -56,7 +55,7 @@ export class TransactionResolver {
     const activityToDelete = await ctx.em
       .getRepository(Activity)
       .findOneOrFail({ id: payload });
-    await ctx.em.getRepository(Transaction).delete({ id: payload });
+    await ctx.em.getRepository(Activity).delete({ id: payload });
     return plainToClass(MwpAccount_AddActivityRollbackPayload, {
       message: `Activity id: "${activityToDelete.id}", type: ${
         ActivityType[activityToDelete.activityType]

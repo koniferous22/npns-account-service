@@ -51,7 +51,7 @@ export class TransactionResolver {
   @Directive('@MwpRollback')
   @UseMiddleware(MultiWriteProxyHmacGuard)
   @Authorized()
-  @Mutation(() => MwpAccount_CreateBoostTransactionPayload, {
+  @Mutation(() => MwpAccount_CreateBoostTransactionRollbackPayload, {
     name: 'mwpAccount_CreateBoostTransactionRollback'
   })
   async createBoostTransactionRollback(
