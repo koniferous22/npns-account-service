@@ -1,4 +1,5 @@
 import { PendingOperation } from '../entities/User';
+import { WalletType } from '../entities/Wallet';
 import templates from '../external/nodemailer/templates';
 
 export class InvalidValueError extends Error {
@@ -198,6 +199,19 @@ export class NegativeWalletBalanceError extends Error {
           ? ` after transaction deletion attempt "${removedTransaction}"`
           : ''
       }`
+    );
+  }
+}
+
+export class InvalidWalletType extends Error {
+  name = 'InvalidWalletType';
+  constructor(
+    public walletId: string,
+    expected: WalletType,
+    actual: WalletType
+  ) {
+    super(
+      `Wallet "${walletId}" has invalid type for this operation: expected: ${expected}, actual: ${actual}`
     );
   }
 }

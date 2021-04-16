@@ -11,8 +11,9 @@ import {
 } from 'type-graphql';
 import { AccountServiceContext } from '../context';
 import { Transaction, TransactionType } from '../entities/Transaction';
-import { Wallet } from '../entities/Wallet';
+import { Wallet, WalletType } from '../entities/Wallet';
 import { MultiWriteProxyHmacGuard } from '../middlewares/MultiWriteProxyHmacGuard';
+import { InvalidWalletType } from '../utils/exceptions';
 import { MwpAccount_CreateBoostTransactionInput } from '../utils/inputs';
 import {
   MwpAccount_CreateBoostTransactionPayload,
@@ -36,6 +37,13 @@ export class TransactionResolver {
       .getRepository(Wallet)
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       .findOneOrFail(payload.walletId);
+    if (wallet.walletType !== WalletType.Monetary) {
+      throw new InvalidWalletType(
+        wallet.id,
+        WalletType.Monetary,
+        wallet.walletType
+      );
+    }
     const transactionRepo = ctx.em.getRepository(Transaction);
     const createdTransaction = transactionRepo.create({
       transactionType: TransactionType.ChallengeBoost,
