@@ -19,7 +19,7 @@ export class ActivityByUserIdInput {
   })
   afterDate?: Date;
 
-  @Field({
+  @Field(() => ID, {
     nullable: true
   })
   afterId?: string;

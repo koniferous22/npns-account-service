@@ -8,7 +8,8 @@ import {
   Args,
   Authorized,
   UseMiddleware,
-  FieldResolver
+  FieldResolver,
+  ID
 } from 'type-graphql';
 import jwt from 'jsonwebtoken';
 import { hashSync, genSaltSync, compareSync } from 'bcrypt';
@@ -82,7 +83,7 @@ export class UserResolver {
   }
 
   @Query(() => User)
-  userById(@Arg('id') id: string, @Ctx() ctx: AccountServiceContext) {
+  userById(@Arg('id', () => ID) id: string, @Ctx() ctx: AccountServiceContext) {
     return ctx.em.getRepository(User).findOneOrFail({ id });
   }
 

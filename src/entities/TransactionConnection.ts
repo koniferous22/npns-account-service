@@ -16,7 +16,7 @@ export class TransactionByWalletIdInput {
   })
   afterDate!: Date;
 
-  @Field({
+  @Field(() => ID, {
     nullable: true
   })
   afterId!: string;

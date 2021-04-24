@@ -59,7 +59,10 @@ export class WalletResolver {
   @UseMiddleware(AccountOwnerGuard)
   @Authorized()
   @Query(() => Wallet)
-  walletById(@Arg('id') id: string, @Ctx() ctx: AccountServiceContext) {
+  walletById(
+    @Arg('id', () => ID) id: string,
+    @Ctx() ctx: AccountServiceContext
+  ) {
     return ctx.em.getRepository(Wallet).findOneOrFail({ id });
   }
 

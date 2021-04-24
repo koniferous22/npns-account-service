@@ -11,11 +11,14 @@ Account service for npns
 * verification token cache certificates 
 * proper responses for error handling cases
 * Simplify config API if possible to make ASTs more understanadable
+  * possibly replace with `typed-env-parser` package
 * password custom validator
 * Email Forms instead of confirmation link
 * bcrypt validation decorator
 * Pagination/Cursor on User -> Activities & Wallet -> Transaction
 * Find better workaround for reference resolving
+* Document Mwp transactions with directives
+  * Not possible atm, bc apollo/federation, doesn't have config parameter for custom directives, i.e. cancels everything else :(
 
 ## TO CONSIDER ??
 * Request limit on ResendSignUp
