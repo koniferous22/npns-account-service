@@ -2,11 +2,11 @@
 ARG IMAGE_TAG_ACCOUNT_SERVICE_ALPINE
 ARG NODE_ENV
 FROM node:$IMAGE_TAG_ACCOUNT_SERVICE_ALPINE AS base_node_alpine
-RUN echo "Building tag service with NODE_ENV=\"${NODE_ENV}\""
+RUN echo "Building account service with NODE_ENV=\"${NODE_ENV}\""
 
 WORKDIR /usr/src/account-service
 COPY package.json package-lock.json ./
-RUN npm install
+RUN npm ci 
 
 # VERSION 1 of the image: npm start:dev
 FROM base_node_alpine AS npns_production

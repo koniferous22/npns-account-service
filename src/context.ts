@@ -1,4 +1,3 @@
-import { Tedis } from 'tedis';
 import { getConnection } from 'typeorm';
 import { Config } from './config';
 import { User } from './entities/User';
@@ -9,6 +8,7 @@ export type AccountServiceContext = {
   em: ReturnType<ReturnType<typeof getConnection>['createEntityManager']>;
   nodemailer: Nodemailer;
   tokenCache: TokenCacheService;
+  // * sensitive stuff shouldn't be part of jwt
   user: {
     data: Omit<User, 'password' | 'pendingOperation'>;
   } | null;
